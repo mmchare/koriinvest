@@ -89,8 +89,8 @@ function AuthPage() {
       const { startAuthentication } = await import("@simplewebauthn/browser");
       const options = await startBio({ data: { country, phone: digits } });
       const assertion = await startAuthentication({ optionsJSON: options });
-      const { token_hash, email } = await finishBio({ data: { response: assertion } });
-      const { error } = await supabase.auth.verifyOtp({ token_hash, type: "magiclink", email });
+      const { token_hash } = await finishBio({ data: { response: assertion } });
+      const { error } = await supabase.auth.verifyOtp({ token_hash, type: "magiclink" });
       if (error) throw error;
       toast.success("Connecté ✨");
       navigate({ to: "/app" });
