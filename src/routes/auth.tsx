@@ -4,7 +4,9 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, phoneToEmail } from "@/lib/format";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Fingerprint } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { webauthnLoginStart, webauthnLoginFinish } from "@/lib/webauthn.functions";
 
 const searchSchema = z.object({ mode: z.enum(["signin", "signup"]).default("signup"), ref: z.string().optional() });
 
@@ -26,17 +28,26 @@ function AuthPage() {
 
   const [country, setCountry] = useState("+237");
   const [phone, setPhone] = useState("");
+  const [phoneConfirm, setPhoneConfirm] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [refCode, setRefCode] = useState(ref ?? "");
   const [loading, setLoading] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
+
+  const startBio = useServerFn(webauthnLoginStart);
+  const finishBio = useServerFn(webauthnLoginFinish);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 6) return toast.error("Numéro invalide");
+    if (isSignup) {
+      const confirmDigits = phoneConfirm.replace(/\D/g, "");
+      if (digits !== confirmDigits) return toast.error("Les deux numéros ne correspondent pas");
+      if (displayName.trim().length < 2) return toast.error("Nom d'affichage requis");
+    }
     if (password.length < 6) return toast.error("Mot de passe trop court (6+)");
-    if (isSignup && displayName.trim().length < 2) return toast.error("Nom d'affichage requis");
 
     setLoading(true);
     try {
@@ -70,6 +81,26 @@ function AuthPage() {
     }
   }
 
+  async function biometricLogin() {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 6) return toast.error("Saisis d'abord ton numéro");
+    setBioLoading(true);
+    try {
+      const { startAuthentication } = await import("@simplewebauthn/browser");
+      const options = await startBio({ data: { country, phone: digits } });
+      const assertion = await startAuthentication({ optionsJSON: options });
+      const { token_hash } = await finishBio({ data: { response: assertion } });
+      const { error } = await supabase.auth.verifyOtp({ token_hash, type: "magiclink" });
+      if (error) throw error;
+      toast.success("Connecté ✨");
+      navigate({ to: "/app" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec biométrie");
+    } finally {
+      setBioLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-md min-h-screen flex flex-col">
@@ -92,6 +123,21 @@ function AuthPage() {
               <input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="flex-1 bg-secondary rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/40" placeholder="6 12 34 56 78" />
             </div>
           </Field>
+          {isSignup && (
+            <Field label="Confirmer le numéro">
+              <input
+                inputMode="tel"
+                value={phoneConfirm}
+                onChange={(e) => setPhoneConfirm(e.target.value)}
+                onPaste={(e) => { e.preventDefault(); toast.error("Saisis ton numéro à nouveau, sans copier-coller"); }}
+                className="w-full bg-secondary rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/40"
+                placeholder="Re-saisis le même numéro"
+              />
+              {phoneConfirm && phone.replace(/\D/g, "") !== phoneConfirm.replace(/\D/g, "") && (
+                <span className="text-xs text-destructive mt-1">Les numéros ne correspondent pas</span>
+              )}
+            </Field>
+          )}
           <Field label="Mot de passe">
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-secondary rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/40" placeholder="••••••••" />
           </Field>
@@ -104,6 +150,18 @@ function AuthPage() {
           <button type="submit" disabled={loading} className="mt-2 w-full bg-kori-gradient text-white font-semibold rounded-2xl py-4 shadow-kori disabled:opacity-60 active:scale-[0.98] transition">
             {loading ? "Patientez…" : isSignup ? "Créer mon compte" : "Se connecter"}
           </button>
+
+          {!isSignup && (
+            <button
+              type="button"
+              onClick={biometricLogin}
+              disabled={bioLoading}
+              className="w-full border border-border bg-card text-foreground font-semibold rounded-2xl py-4 flex items-center justify-center gap-2 hover:bg-muted disabled:opacity-60 active:scale-[0.98] transition"
+            >
+              <Fingerprint className="w-5 h-5 text-primary" />
+              {bioLoading ? "Vérification…" : "Connexion biométrique"}
+            </button>
+          )}
 
           <div className="text-center text-sm text-muted-foreground mt-2">
             {isSignup ? (
