@@ -41,6 +41,11 @@ function ProfilePage() {
         toast.error("Cet appareil ne supporte pas la biométrie");
         return;
       }
+      const inIframe = window.self !== window.top;
+      if (inIframe) {
+        toast.error("Ouvre l'app dans un onglet séparé pour activer la biométrie (la preview bloque WebAuthn).", { duration: 6000 });
+        return;
+      }
       const options = await startFn();
       const attestation = await startRegistration({ optionsJSON: options });
       const deviceName = /iPhone|iPad/.test(navigator.userAgent) ? "iPhone/iPad"
