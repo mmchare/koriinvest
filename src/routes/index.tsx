@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-md min-h-screen flex flex-col bg-kori-hero text-white relative overflow-hidden">
@@ -45,7 +45,7 @@ function Landing() {
           </div>
 
           <div className="mt-auto pt-10 space-y-3 safe-bottom">
-            {loading ? null : user ? (
+            {user ? (
               <Link to="/app" className="block w-full text-center bg-white text-[color:var(--kori)] font-semibold rounded-2xl py-4 shadow-kori active:scale-[0.98] transition">
                 Ouvrir mon portefeuille
               </Link>
