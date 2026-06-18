@@ -11,6 +11,7 @@ import { webauthnLoginStart, webauthnLoginFinish } from "@/lib/webauthn.function
 const searchSchema = z.object({ mode: z.enum(["signin", "signup"]).default("signup"), ref: z.string().optional() });
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   validateSearch: (s) => searchSchema.parse(s),
   head: () => ({
     meta: [
