@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-md min-h-screen flex flex-col bg-kori-hero text-white relative overflow-hidden">
