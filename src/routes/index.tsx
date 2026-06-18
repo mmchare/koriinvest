@@ -45,7 +45,7 @@ function Landing() {
           </div>
 
           <div className="mt-auto pt-10 space-y-3 safe-bottom">
-            {loading ? null : user ? (
+            {user ? (
               <Link to="/app" className="block w-full text-center bg-white text-[color:var(--kori)] font-semibold rounded-2xl py-4 shadow-kori active:scale-[0.98] transition">
                 Ouvrir mon portefeuille
               </Link>
