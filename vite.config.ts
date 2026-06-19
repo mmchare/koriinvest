@@ -12,7 +12,7 @@ export default defineConfig({
       alias: [
         {
           find: /^tslib$/,
-          replacement: new URL("./src/lib/tslib-compat.ts", import.meta.url).pathname,
+          replacement: new URL("./src/lib/tslib-compat.js", import.meta.url).pathname,
         },
       ],
     },
