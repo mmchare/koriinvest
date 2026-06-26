@@ -32,8 +32,12 @@ function DepositPage() {
     setLoading(true);
     try {
       const r = await deposit({ data: { amount_cfa: n, phone } });
-      if (!r.ok) throw new Error(r.kri ? "Erreur" : "Erreur");
-      toast.success("Demande envoyée. Validez le paiement sur votre téléphone.");
+      if (!r.ok) throw new Error("Erreur");
+      if (r.authorization_url) {
+        window.location.href = r.authorization_url;
+        return;
+      }
+      toast.success("Demande envoyée. Un admin va valider votre paiement.");
       qc.invalidateQueries();
       navigate({ to: "/app" });
     } catch (err) {
