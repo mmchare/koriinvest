@@ -82,6 +82,27 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          action: string
+          created_at: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: number
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       referral_commissions: {
         Row: {
           amount_kori: number
@@ -134,6 +155,8 @@ export type Database = {
           amount_kori: number
           created_at: string
           id: string
+          provider_payload: Json | null
+          provider_reference: string | null
           provider_tx_id: string | null
           recipient_phone: string | null
           status: Database["public"]["Enums"]["tx_status"]
@@ -147,6 +170,8 @@ export type Database = {
           amount_kori: number
           created_at?: string
           id?: string
+          provider_payload?: Json | null
+          provider_reference?: string | null
           provider_tx_id?: string | null
           recipient_phone?: string | null
           status?: Database["public"]["Enums"]["tx_status"]
@@ -160,6 +185,8 @@ export type Database = {
           amount_kori?: number
           created_at?: string
           id?: string
+          provider_payload?: Json | null
+          provider_reference?: string | null
           provider_tx_id?: string | null
           recipient_phone?: string | null
           status?: Database["public"]["Enums"]["tx_status"]
@@ -356,6 +383,15 @@ export type Database = {
         Args: { _admin: string; _approve: boolean; _notes: string; _tx: string }
         Returns: Json
       }
+      check_rate_limit: {
+        Args: {
+          _action: string
+          _max: number
+          _user: string
+          _window_seconds: number
+        }
+        Returns: boolean
+      }
       claim_vault: { Args: { _user: string; _vault: string }; Returns: Json }
       create_vault: {
         Args: { _amount: number; _days: number; _user: string }
@@ -370,6 +406,10 @@ export type Database = {
       }
       initiate_withdrawal: {
         Args: { _amount_cfa: number; _phone: string; _user: string }
+        Returns: Json
+      }
+      notchpay_credit_deposit: {
+        Args: { _payload: Json; _reference: string }
         Returns: Json
       }
       spin_wheel: { Args: { _user: string }; Returns: Json }
