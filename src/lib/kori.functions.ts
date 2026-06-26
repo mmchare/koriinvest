@@ -49,14 +49,6 @@ export const claimVault = createServerFn({ method: "POST" })
     return out as { ok: boolean; returned?: number; error?: string };
   });
 
-// ---- Deposit (mock NotchPay - creates PENDING tx) ----
-const depositSchema = z.object({
-  amount_cfa: z.number().positive().max(10_000_000),
-  phone: z.string().min(6).max(20),
-});
-export const initiateDeposit = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => depositSchema.parse(d))
 // ---- Deposit (NotchPay if NOTCHPAY_PUBLIC_KEY set, else mock PENDING tx) ----
 const depositSchema = z.object({
   amount_cfa: z.number().positive().max(10_000_000),
