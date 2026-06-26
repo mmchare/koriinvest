@@ -57,11 +57,54 @@ const depositSchema = z.object({
 export const initiateDeposit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => depositSchema.parse(d))
+// ---- Deposit (NotchPay if NOTCHPAY_PUBLIC_KEY set, else mock PENDING tx) ----
+const depositSchema = z.object({
+  amount_cfa: z.number().positive().max(10_000_000),
+  phone: z.string().min(6).max(20),
+});
+export const initiateDeposit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => depositSchema.parse(d))
   .handler(async ({ data, context }) => {
+    await enforceRateLimit(context.userId, "deposit_init", 5, 300);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: cfg } = await supabaseAdmin.from("app_config").select("value").eq("key", "kri_per_xaf").maybeSingle();
     const rate = Number(cfg?.value ?? 0.1);
     const kri = Math.round(data.amount_cfa * rate * 10000) / 10000;
+
+    const notchKey = process.env.NOTCHPAY_PUBLIC_KEY;
+    let providerRef: string | null = null;
+    let authorizationUrl: string | null = null;
+
+    if (notchKey) {
+      // Get user email for NotchPay (required)
+      const { data: profile } = await supabaseAdmin.from("profiles").select("phone_number, display_name").eq("id", context.userId).maybeSingle();
+      const email = `${context.userId}@kori.app`;
+      try {
+        const resp = await fetch("https://api.notchpay.co/payments/initialize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: notchKey },
+          body: JSON.stringify({
+            email,
+            amount: data.amount_cfa,
+            currency: "XAF",
+            description: `Dépôt KORI - ${kri} KRI`,
+            reference: `kori_${context.userId.slice(0, 8)}_${Date.now()}`,
+            customer: { phone: data.phone, name: profile?.display_name ?? "Utilisateur" },
+            callback: "https://koriinvest.lovable.app/app",
+          }),
+        });
+        const body = await resp.json() as { transaction?: { reference?: string }; authorization_url?: string; message?: string };
+        if (!resp.ok || !body?.transaction?.reference) {
+          throw new Error(body?.message ?? "Erreur NotchPay");
+        }
+        providerRef = body.transaction.reference;
+        authorizationUrl = body.authorization_url ?? null;
+      } catch (e) {
+        throw new Error(`NotchPay: ${(e as Error).message}`);
+      }
+    }
+
     const { data: tx, error } = await supabaseAdmin.from("transactions").insert({
       user_id: context.userId,
       type: "DEPOSIT",
@@ -69,9 +112,10 @@ export const initiateDeposit = createServerFn({ method: "POST" })
       amount_kori: kri,
       status: "PENDING",
       recipient_phone: data.phone,
+      provider_reference: providerRef,
     }).select("id").single();
     if (error) throw new Error(error.message);
-    return { ok: true, tx_id: tx.id, kri };
+    return { ok: true, tx_id: tx.id, kri, authorization_url: authorizationUrl };
   });
 
 // ---- Withdrawal ----
@@ -83,6 +127,7 @@ export const initiateWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => withdrawSchema.parse(d))
   .handler(async ({ data, context }) => {
+    await enforceRateLimit(context.userId, "withdraw_init", 3, 600);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: out, error } = await supabaseAdmin.rpc("initiate_withdrawal" as never, {
       _user: context.userId, _amount_cfa: data.amount_cfa, _phone: data.phone,
