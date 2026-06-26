@@ -20,6 +20,7 @@ import { Route as AppVaultRouteImport } from './routes/app.vault'
 import { Route as AppReferralRouteImport } from './routes/app.referral'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppDepositRouteImport } from './routes/app.deposit'
+import { Route as ApiPublicWebhooksNotchpayRouteImport } from './routes/api/public/webhooks/notchpay'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -76,6 +77,12 @@ const AppDepositRoute = AppDepositRouteImport.update({
   path: '/deposit',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicWebhooksNotchpayRoute =
+  ApiPublicWebhooksNotchpayRouteImport.update({
+    id: '/api/public/webhooks/notchpay',
+    path: '/api/public/webhooks/notchpay',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/app/wheel': typeof AppWheelRoute
   '/app/withdraw': typeof AppWithdrawRoute
   '/app/': typeof AppIndexRoute
+  '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,6 +109,7 @@ export interface FileRoutesByTo {
   '/app/wheel': typeof AppWheelRoute
   '/app/withdraw': typeof AppWithdrawRoute
   '/app': typeof AppIndexRoute
+  '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,6 +124,7 @@ export interface FileRoutesById {
   '/app/wheel': typeof AppWheelRoute
   '/app/withdraw': typeof AppWithdrawRoute
   '/app/': typeof AppIndexRoute
+  '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/app/wheel'
     | '/app/withdraw'
     | '/app/'
+    | '/api/public/webhooks/notchpay'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/app/wheel'
     | '/app/withdraw'
     | '/app'
+    | '/api/public/webhooks/notchpay'
   id:
     | '__root__'
     | '/'
@@ -155,6 +167,7 @@ export interface FileRouteTypes {
     | '/app/wheel'
     | '/app/withdraw'
     | '/app/'
+    | '/api/public/webhooks/notchpay'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -162,6 +175,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicWebhooksNotchpayRoute: typeof ApiPublicWebhooksNotchpayRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -243,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDepositRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/webhooks/notchpay': {
+      id: '/api/public/webhooks/notchpay'
+      path: '/api/public/webhooks/notchpay'
+      fullPath: '/api/public/webhooks/notchpay'
+      preLoaderRoute: typeof ApiPublicWebhooksNotchpayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -273,17 +294,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicWebhooksNotchpayRoute: ApiPublicWebhooksNotchpayRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
