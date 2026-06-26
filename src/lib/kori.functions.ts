@@ -2,10 +2,20 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+async function enforceRateLimit(userId: string, action: string, max: number, windowSeconds: number) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.rpc("check_rate_limit" as never, {
+    _user: userId, _action: action, _max: max, _window_seconds: windowSeconds,
+  } as never);
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Trop de tentatives, réessaie dans quelques instants.");
+}
+
 // ---- Wheel ----
 export const spinWheel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await enforceRateLimit(context.userId, "spin_wheel", 3, 60);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.rpc("spin_wheel" as never, { _user: context.userId } as never);
     if (error) throw new Error(error.message);
