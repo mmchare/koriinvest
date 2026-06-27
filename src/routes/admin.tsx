@@ -23,7 +23,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
-  const [tab, setTab] = useState<"withdrawals" | "deposits" | "users" | "finance">("withdrawals");
+  const [tab, setTab] = useState<"withdrawals" | "deposits" | "users" | "finance" | "analytics" | "broadcast">("withdrawals");
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,7 +37,9 @@ function AdminPage() {
             ["withdrawals", "Retraits"],
             ["deposits", "Dépôts"],
             ["finance", "Finances"],
+            ["analytics", "Analytics"],
             ["users", "Utilisateurs"],
+            ["broadcast", "Annonces"],
           ] as const).map(([k, l]) => (
             <button key={k} onClick={() => setTab(k)}
               className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap ${tab === k ? "bg-kori-gradient text-white shadow-kori" : "bg-card border border-border"}`}>
@@ -48,7 +50,9 @@ function AdminPage() {
         {tab === "withdrawals" && <Withdrawals />}
         {tab === "deposits" && <Deposits />}
         {tab === "finance" && <Finance />}
+        {tab === "analytics" && <Analytics />}
         {tab === "users" && <Users />}
+        {tab === "broadcast" && <Broadcast />}
       </div>
     </div>
   );
