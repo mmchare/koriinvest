@@ -157,6 +157,18 @@ function ProfilePage() {
           </button>
         </div>
 
+        <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
+          {pushOn ? <Bell className="w-5 h-5 text-primary" /> : <BellOff className="w-5 h-5 text-muted-foreground" />}
+          <div className="flex-1">
+            <p className="font-semibold">Notifications push</p>
+            <p className="text-xs text-muted-foreground">Dépôts crédités, retraits validés, roue prête</p>
+          </div>
+          <button onClick={togglePush} disabled={pushBusy}
+            className={`px-3 py-2 rounded-xl text-sm font-semibold disabled:opacity-60 ${pushOn ? "bg-secondary text-foreground" : "bg-kori-gradient text-white"}`}>
+            {pushBusy ? "…" : pushOn ? "Désactiver" : "Activer"}
+          </button>
+        </div>
+
         {isAdmin && (
           <Link to="/admin" className="block bg-foreground text-background rounded-2xl p-4 flex items-center gap-3">
             <Shield className="w-5 h-5" />
