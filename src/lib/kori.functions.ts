@@ -141,6 +141,17 @@ export const adminProcessWithdrawal = createServerFn({ method: "POST" })
       _admin: context.userId, _tx: data.tx_id, _approve: data.approve, _notes: data.notes ?? null,
     } as never);
     if (error) throw new Error(error.message);
+    try {
+      const { data: tx } = await supabaseAdmin.from("transactions").select("user_id, amount_kori, amount_cfa").eq("id", data.tx_id).maybeSingle();
+      if (tx) {
+        const { sendPushToUser } = await import("./push.server");
+        await sendPushToUser(tx.user_id, {
+          title: data.approve ? "Retrait validé ✅" : "Retrait refusé",
+          body: data.approve ? `${tx.amount_cfa} XAF envoyés à ton Mobile Money.` : `Motif : ${data.notes ?? "non précisé"}. Tes ${tx.amount_kori} KRI sont recrédités.`,
+          url: "/app",
+        });
+      }
+    } catch (_) { /* push optional */ }
     return out as { ok: boolean; error?: string };
   });
 
