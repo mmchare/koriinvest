@@ -242,7 +242,7 @@ function Analytics() {
       const [{ data: tx }, { data: users }, { data: wheel }] = await Promise.all([
         supabase.from("transactions").select("type,status,amount_cfa,amount_kori,created_at").gte("created_at", since),
         supabase.from("profiles").select("created_at").gte("created_at", since),
-        supabase.from("wheel_logs").select("amount_kori,created_at").gte("created_at", since),
+        supabase.from("wheel_logs").select("reward_amount,played_at").gte("played_at", since),
       ]);
       return { tx: tx ?? [], users: users ?? [], wheel: wheel ?? [] };
     },
