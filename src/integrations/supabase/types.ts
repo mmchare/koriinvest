@@ -405,6 +405,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_balance: {
+        Args: { _admin: string; _delta: number; _reason: string; _user: string }
+        Returns: Json
+      }
       admin_confirm_deposit: {
         Args: { _admin: string; _tx: string }
         Returns: Json
