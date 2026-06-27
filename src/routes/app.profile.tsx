@@ -1,12 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, LogOut, Shield, Fingerprint, Trash2 } from "lucide-react";
+import { ArrowLeft, LogOut, Shield, Fingerprint, Trash2, Bell, BellOff } from "lucide-react";
 import { useProfile, useIsAdmin } from "@/hooks/use-kori";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { webauthnList, webauthnRegisterStart, webauthnRegisterFinish, webauthnRemove } from "@/lib/webauthn.functions";
+import { savePushSubscription, removePushSubscription } from "@/lib/push.functions";
+import { pushSupported, subscribePush, unsubscribePush, getPushSubscription } from "@/lib/push-client";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/app/profile")({
   component: ProfilePage,
