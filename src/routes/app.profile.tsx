@@ -1,12 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, LogOut, Shield, Fingerprint, Trash2 } from "lucide-react";
+import { ArrowLeft, LogOut, Shield, Fingerprint, Trash2, Bell, BellOff } from "lucide-react";
 import { useProfile, useIsAdmin } from "@/hooks/use-kori";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { webauthnList, webauthnRegisterStart, webauthnRegisterFinish, webauthnRemove } from "@/lib/webauthn.functions";
+import { savePushSubscription, removePushSubscription } from "@/lib/push.functions";
+import { pushSupported, subscribePush, unsubscribePush, getPushSubscription } from "@/lib/push-client";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/app/profile")({
   component: ProfilePage,
@@ -25,6 +27,41 @@ function ProfilePage() {
 
   const { data: passkeys } = useQuery({ queryKey: ["passkeys"], queryFn: () => listFn() });
   const [enrolling, setEnrolling] = useState(false);
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const saveSubFn = useServerFn(savePushSubscription);
+  const rmSubFn = useServerFn(removePushSubscription);
+
+  useEffect(() => {
+    if (!pushSupported()) return;
+    getPushSubscription().then((s) => setPushOn(!!s));
+  }, []);
+
+  async function togglePush() {
+    setPushBusy(true);
+    try {
+      if (!pushSupported()) { toast.error("Notifications non supportées"); return; }
+      if (pushOn) {
+        const sub = await getPushSubscription();
+        if (sub) {
+          await unsubscribePush();
+          await rmSubFn({ data: { endpoint: sub.endpoint } });
+        }
+        setPushOn(false);
+        toast.success("Notifications désactivées");
+      } else {
+        const sub = await subscribePush();
+        await saveSubFn({ data: { ...sub, user_agent: navigator.userAgent.slice(0, 480) } });
+        setPushOn(true);
+        toast.success("Notifications activées 🔔");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec");
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
 
   async function logout() {
     await qc.cancelQueries();
@@ -117,6 +154,18 @@ function ProfilePage() {
             className="w-full bg-kori-gradient text-white font-semibold rounded-xl py-3 disabled:opacity-60 active:scale-[0.98] transition"
           >
             {enrolling ? "Activation…" : "Activer sur cet appareil"}
+          </button>
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
+          {pushOn ? <Bell className="w-5 h-5 text-primary" /> : <BellOff className="w-5 h-5 text-muted-foreground" />}
+          <div className="flex-1">
+            <p className="font-semibold">Notifications push</p>
+            <p className="text-xs text-muted-foreground">Dépôts crédités, retraits validés, roue prête</p>
+          </div>
+          <button onClick={togglePush} disabled={pushBusy}
+            className={`px-3 py-2 rounded-xl text-sm font-semibold disabled:opacity-60 ${pushOn ? "bg-secondary text-foreground" : "bg-kori-gradient text-white"}`}>
+            {pushBusy ? "…" : pushOn ? "Désactiver" : "Activer"}
           </button>
         </div>
 
