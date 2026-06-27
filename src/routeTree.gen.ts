@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as AppWithdrawRouteImport } from './routes/app.withdraw'
 import { Route as AppWheelRouteImport } from './routes/app.wheel'
 import { Route as AppVaultRouteImport } from './routes/app.vault'
@@ -46,6 +47,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const RCodeRoute = RCodeRouteImport.update({
+  id: '/r/$code',
+  path: '/r/$code',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppWithdrawRoute = AppWithdrawRouteImport.update({
   id: '/withdraw',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/app/vault': typeof AppVaultRoute
   '/app/wheel': typeof AppWheelRoute
   '/app/withdraw': typeof AppWithdrawRoute
+  '/r/$code': typeof RCodeRoute
   '/app/': typeof AppIndexRoute
   '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
 }
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/app/vault': typeof AppVaultRoute
   '/app/wheel': typeof AppWheelRoute
   '/app/withdraw': typeof AppWithdrawRoute
+  '/r/$code': typeof RCodeRoute
   '/app': typeof AppIndexRoute
   '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
 }
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/app/vault': typeof AppVaultRoute
   '/app/wheel': typeof AppWheelRoute
   '/app/withdraw': typeof AppWithdrawRoute
+  '/r/$code': typeof RCodeRoute
   '/app/': typeof AppIndexRoute
   '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
 }
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/app/vault'
     | '/app/wheel'
     | '/app/withdraw'
+    | '/r/$code'
     | '/app/'
     | '/api/public/webhooks/notchpay'
   fileRoutesByTo: FileRoutesByTo
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/app/vault'
     | '/app/wheel'
     | '/app/withdraw'
+    | '/r/$code'
     | '/app'
     | '/api/public/webhooks/notchpay'
   id:
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/app/vault'
     | '/app/wheel'
     | '/app/withdraw'
+    | '/r/$code'
     | '/app/'
     | '/api/public/webhooks/notchpay'
   fileRoutesById: FileRoutesById
@@ -175,6 +187,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  RCodeRoute: typeof RCodeRoute
   ApiPublicWebhooksNotchpayRoute: typeof ApiPublicWebhooksNotchpayRoute
 }
 
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/r/$code': {
+      id: '/r/$code'
+      path: '/r/$code'
+      fullPath: '/r/$code'
+      preLoaderRoute: typeof RCodeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/app/withdraw': {
       id: '/app/withdraw'
@@ -294,6 +314,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  RCodeRoute: RCodeRoute,
   ApiPublicWebhooksNotchpayRoute: ApiPublicWebhooksNotchpayRoute,
 }
 export const routeTree = rootRouteImport
