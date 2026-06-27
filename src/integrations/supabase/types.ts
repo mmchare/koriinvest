@@ -82,6 +82,36 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           action: string
@@ -426,6 +456,7 @@ export type Database = {
         | "VAULT_LOCK"
         | "VAULT_PAYOUT"
         | "REFERRAL_BONUS"
+        | "ADMIN_ADJUST"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -564,6 +595,7 @@ export const Constants = {
         "VAULT_LOCK",
         "VAULT_PAYOUT",
         "REFERRAL_BONUS",
+        "ADMIN_ADJUST",
       ],
     },
   },
