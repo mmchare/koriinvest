@@ -156,6 +156,13 @@ export const adminConfirmDeposit = createServerFn({ method: "POST" })
       _admin: context.userId, _tx: data.tx_id,
     } as never);
     if (error) throw new Error(error.message);
+    try {
+      const { data: tx } = await supabaseAdmin.from("transactions").select("user_id, amount_kori").eq("id", data.tx_id).maybeSingle();
+      if (tx) {
+        const { sendPushToUser } = await import("./push.server");
+        await sendPushToUser(tx.user_id, { title: "Dépôt crédité ✅", body: `+${tx.amount_kori} KRI ajoutés à ton solde.`, url: "/app" });
+      }
+    } catch (_) { /* push optional */ }
     return out as { ok: boolean; error?: string };
   });
 
