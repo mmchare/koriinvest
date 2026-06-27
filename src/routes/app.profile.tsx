@@ -27,6 +27,41 @@ function ProfilePage() {
 
   const { data: passkeys } = useQuery({ queryKey: ["passkeys"], queryFn: () => listFn() });
   const [enrolling, setEnrolling] = useState(false);
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const saveSubFn = useServerFn(savePushSubscription);
+  const rmSubFn = useServerFn(removePushSubscription);
+
+  useEffect(() => {
+    if (!pushSupported()) return;
+    getPushSubscription().then((s) => setPushOn(!!s));
+  }, []);
+
+  async function togglePush() {
+    setPushBusy(true);
+    try {
+      if (!pushSupported()) { toast.error("Notifications non supportées"); return; }
+      if (pushOn) {
+        const sub = await getPushSubscription();
+        if (sub) {
+          await unsubscribePush();
+          await rmSubFn({ data: { endpoint: sub.endpoint } });
+        }
+        setPushOn(false);
+        toast.success("Notifications désactivées");
+      } else {
+        const sub = await subscribePush();
+        await saveSubFn({ data: { ...sub, user_agent: navigator.userAgent.slice(0, 480) } });
+        setPushOn(true);
+        toast.success("Notifications activées 🔔");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec");
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
 
   async function logout() {
     await qc.cancelQueries();
