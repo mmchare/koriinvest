@@ -1,12 +1,15 @@
 import { createFileRoute, redirect, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { adminProcessWithdrawal, adminConfirmDeposit, adminBlockUser } from "@/lib/kori.functions";
+import { adminAdjustBalance } from "@/lib/admin.functions";
+import { adminBroadcastPush } from "@/lib/push.functions";
 import { fmtKri, fmtXaf } from "@/lib/format";
-import { ArrowLeft, Check, X, Search, Ban, Unlock } from "lucide-react";
+import { ArrowLeft, Check, X, Search, Ban, Unlock, Sliders, Send, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Legend } from "recharts";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
