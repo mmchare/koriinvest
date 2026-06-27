@@ -269,7 +269,7 @@ function Analytics() {
       if (t.type === "WITHDRAWAL") bump(t.created_at as string, "retraits", Number(t.amount_cfa ?? 0));
     }
     for (const u of data?.users ?? []) bump(u.created_at as string, "users", 1);
-    for (const w of data?.wheel ?? []) bump(w.created_at as string, "roue", Number(w.amount_kori ?? 0));
+    for (const w of data?.wheel ?? []) bump(w.played_at as string, "roue", Number(w.reward_amount ?? 0));
     return days.map((d) => {
       const v = map.get(`20${d.day.split("-").length === 2 ? new Date().getFullYear().toString().slice(2) : ""}`); // unused fallback
       void v;
