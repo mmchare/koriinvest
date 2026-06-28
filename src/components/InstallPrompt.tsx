@@ -7,14 +7,26 @@ type BIPEvent = Event & {
 };
 
 const DISMISS_KEY = "kori_install_dismissed_at";
+const INSTALLED_KEY = "kori_pwa_installed";
 const DISMISS_DAYS = 7;
 
 function isStandalone() {
   if (typeof window === "undefined") return true;
   return (
     window.matchMedia?.("(display-mode: standalone)").matches ||
-    (window.navigator as unknown as { standalone?: boolean }).standalone === true
+    window.matchMedia?.("(display-mode: fullscreen)").matches ||
+    window.matchMedia?.("(display-mode: minimal-ui)").matches ||
+    (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+    document.referrer.startsWith("android-app://")
   );
+}
+
+function wasInstalled() {
+  try { return localStorage.getItem(INSTALLED_KEY) === "1"; } catch { return false; }
+}
+
+function markInstalled() {
+  try { localStorage.setItem(INSTALLED_KEY, "1"); } catch { /* empty */ }
 }
 
 function recentlyDismissed() {
@@ -33,7 +45,9 @@ export function InstallPrompt() {
   const [iosHint, setIosHint] = useState(false);
 
   useEffect(() => {
-    if (isStandalone() || recentlyDismissed()) return;
+    // Persist installed state so we never re-prompt on the same device
+    if (isStandalone()) { markInstalled(); return; }
+    if (wasInstalled() || recentlyDismissed()) return;
     if (window.self !== window.top) return; // iframe preview
 
     const onBIP = (e: Event) => {
@@ -41,19 +55,37 @@ export function InstallPrompt() {
       setDeferred(e as BIPEvent);
       setShow(true);
     };
+    const onInstalled = () => {
+      markInstalled();
+      setShow(false);
+      setDeferred(null);
+    };
+    const mql = window.matchMedia?.("(display-mode: standalone)");
+    const onDisplayChange = (e: MediaQueryListEvent) => {
+      if (e.matches) { markInstalled(); setShow(false); }
+    };
+
     window.addEventListener("beforeinstallprompt", onBIP);
+    window.addEventListener("appinstalled", onInstalled);
+    mql?.addEventListener?.("change", onDisplayChange);
 
     // iOS Safari fallback (no beforeinstallprompt)
     const ua = navigator.userAgent;
     const isIOS = /iPhone|iPad|iPod/.test(ua);
     const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+    let iosTimer: ReturnType<typeof setTimeout> | undefined;
     if (isIOS && isSafari) {
-      const t = setTimeout(() => { setIosHint(true); setShow(true); }, 1200);
-      return () => { clearTimeout(t); window.removeEventListener("beforeinstallprompt", onBIP); };
+      iosTimer = setTimeout(() => { setIosHint(true); setShow(true); }, 1200);
     }
 
-    return () => window.removeEventListener("beforeinstallprompt", onBIP);
+    return () => {
+      if (iosTimer) clearTimeout(iosTimer);
+      window.removeEventListener("beforeinstallprompt", onBIP);
+      window.removeEventListener("appinstalled", onInstalled);
+      mql?.removeEventListener?.("change", onDisplayChange);
+    };
   }, []);
+
 
   function dismiss() {
     try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch { /* empty */ }
