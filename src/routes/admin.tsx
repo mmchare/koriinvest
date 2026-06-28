@@ -6,8 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { adminProcessWithdrawal, adminConfirmDeposit, adminBlockUser } from "@/lib/kori.functions";
 import { adminAdjustBalance } from "@/lib/admin.functions";
 import { adminBroadcastPush } from "@/lib/push.functions";
+import { adminGetSolanaStatus, adminSetupTreasury, adminAirdropDevnet, adminDeployMint } from "@/lib/solana.functions";
 import { fmtKri, fmtXaf } from "@/lib/format";
-import { ArrowLeft, Check, X, Search, Ban, Unlock, Sliders, Send, BarChart3 } from "lucide-react";
+import { ArrowLeft, Check, X, Search, Ban, Unlock, Sliders, Send, BarChart3, Coins, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Legend } from "recharts";
 
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
-  const [tab, setTab] = useState<"withdrawals" | "deposits" | "users" | "finance" | "analytics" | "broadcast">("withdrawals");
+  const [tab, setTab] = useState<"withdrawals" | "deposits" | "users" | "finance" | "analytics" | "broadcast" | "solana">("withdrawals");
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,6 +41,7 @@ function AdminPage() {
             ["analytics", "Analytics"],
             ["users", "Utilisateurs"],
             ["broadcast", "Annonces"],
+            ["solana", "Solana"],
           ] as const).map(([k, l]) => (
             <button key={k} onClick={() => setTab(k)}
               className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap ${tab === k ? "bg-kori-gradient text-white shadow-kori" : "bg-card border border-border"}`}>
@@ -53,6 +55,7 @@ function AdminPage() {
         {tab === "analytics" && <Analytics />}
         {tab === "users" && <Users />}
         {tab === "broadcast" && <Broadcast />}
+        {tab === "solana" && <Solana />}
       </div>
     </div>
   );
