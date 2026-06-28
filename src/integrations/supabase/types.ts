@@ -41,6 +41,8 @@ export type Database = {
           phone_number: string
           referral_code: string
           referred_by: string | null
+          solana_pubkey: string | null
+          solana_secret_encrypted: string | null
           solana_wallet_pubkey: string | null
           updated_at: string
         }
@@ -55,6 +57,8 @@ export type Database = {
           phone_number: string
           referral_code: string
           referred_by?: string | null
+          solana_pubkey?: string | null
+          solana_secret_encrypted?: string | null
           solana_wallet_pubkey?: string | null
           updated_at?: string
         }
@@ -69,6 +73,8 @@ export type Database = {
           phone_number?: string
           referral_code?: string
           referred_by?: string | null
+          solana_pubkey?: string | null
+          solana_secret_encrypted?: string | null
           solana_wallet_pubkey?: string | null
           updated_at?: string
         }
@@ -189,6 +195,8 @@ export type Database = {
           provider_reference: string | null
           provider_tx_id: string | null
           recipient_phone: string | null
+          solana_recipient: string | null
+          solana_signature: string | null
           status: Database["public"]["Enums"]["tx_status"]
           type: Database["public"]["Enums"]["tx_type"]
           updated_at: string
@@ -204,6 +212,8 @@ export type Database = {
           provider_reference?: string | null
           provider_tx_id?: string | null
           recipient_phone?: string | null
+          solana_recipient?: string | null
+          solana_signature?: string | null
           status?: Database["public"]["Enums"]["tx_status"]
           type: Database["public"]["Enums"]["tx_type"]
           updated_at?: string
@@ -219,6 +229,8 @@ export type Database = {
           provider_reference?: string | null
           provider_tx_id?: string | null
           recipient_phone?: string | null
+          solana_recipient?: string | null
+          solana_signature?: string | null
           status?: Database["public"]["Enums"]["tx_status"]
           type?: Database["public"]["Enums"]["tx_type"]
           updated_at?: string
@@ -427,6 +439,10 @@ export type Database = {
         Returns: boolean
       }
       claim_vault: { Args: { _user: string; _vault: string }; Returns: Json }
+      confirm_onchain_withdraw: {
+        Args: { _signature: string; _tx: string }
+        Returns: Json
+      }
       create_vault: {
         Args: { _amount: number; _days: number; _user: string }
         Returns: Json
@@ -438,12 +454,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      initiate_onchain_withdraw: {
+        Args: { _amount: number; _recipient: string; _user: string }
+        Returns: Json
+      }
       initiate_withdrawal: {
         Args: { _amount_cfa: number; _phone: string; _user: string }
         Returns: Json
       }
       notchpay_credit_deposit: {
         Args: { _payload: Json; _reference: string }
+        Returns: Json
+      }
+      refund_onchain_withdraw: {
+        Args: { _reason: string; _tx: string }
         Returns: Json
       }
       spin_wheel: { Args: { _user: string }; Returns: Json }
@@ -461,6 +485,7 @@ export type Database = {
         | "VAULT_PAYOUT"
         | "REFERRAL_BONUS"
         | "ADMIN_ADJUST"
+        | "ONCHAIN_WITHDRAW"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -600,6 +625,7 @@ export const Constants = {
         "VAULT_PAYOUT",
         "REFERRAL_BONUS",
         "ADMIN_ADJUST",
+        "ONCHAIN_WITHDRAW",
       ],
     },
   },
