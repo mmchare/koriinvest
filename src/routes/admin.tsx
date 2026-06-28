@@ -366,3 +366,102 @@ function Broadcast() {
     </div>
   );
 }
+
+function Solana() {
+  const qc = useQueryClient();
+  const statusFn = useServerFn(adminGetSolanaStatus);
+  const setupFn = useServerFn(adminSetupTreasury);
+  const airdropFn = useServerFn(adminAirdropDevnet);
+  const deployFn = useServerFn(adminDeployMint);
+  const { data: s, isLoading } = useQuery({ queryKey: ["solana-status"], queryFn: () => statusFn() });
+  const [supply, setSupply] = useState("1000000000");
+  const [busy, setBusy] = useState<string>("");
+
+  async function run(name: string, fn: () => Promise<unknown>, success: string) {
+    setBusy(name);
+    try { await fn(); toast.success(success); qc.invalidateQueries({ queryKey: ["solana-status"] }); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Erreur"); }
+    finally { setBusy(""); }
+  }
+
+  function copy(text: string) {
+    navigator.clipboard.writeText(text);
+    toast.success("Copié");
+  }
+
+  const explorer = (addr: string) => s?.network === "mainnet-beta"
+    ? `https://solscan.io/account/${addr}`
+    : `https://solscan.io/account/${addr}?cluster=devnet`;
+
+  if (isLoading) return <p className="text-sm text-muted-foreground">Chargement…</p>;
+  if (!s) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-card border border-border rounded-2xl p-4 space-y-2">
+        <div className="flex items-center gap-2"><Coins className="w-4 h-4 text-primary" /><h3 className="font-semibold">Réseau : {s.network}</h3></div>
+        <p className="text-xs text-muted-foreground">RPC : {s.rpcUrl}</p>
+      </div>
+
+      <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+        <h3 className="font-semibold">1. Treasury (wallet maître KORI)</h3>
+        {s.treasuryConfigured ? (
+          <>
+            <div className="bg-secondary rounded-xl p-3 flex items-center justify-between gap-2">
+              <code className="text-xs break-all">{s.treasuryPubkey}</code>
+              <div className="flex gap-1 shrink-0">
+                <button onClick={() => copy(s.treasuryPubkey)} className="p-1.5 rounded hover:bg-muted"><Copy className="w-3.5 h-3.5" /></button>
+                <a href={explorer(s.treasuryPubkey)} target="_blank" rel="noreferrer" className="text-xs underline">↗</a>
+              </div>
+            </div>
+            <p className="text-sm">Balance SOL : <strong>{s.solBalance.toFixed(4)}</strong> · KRI en pool : <strong>{fmtKri(s.treasuryKriBalance)}</strong></p>
+          </>
+        ) : (
+          <button onClick={() => run("setup", () => setupFn(), "Treasury créée")} disabled={!!busy}
+            className="w-full bg-kori-gradient text-white rounded-xl py-3 font-semibold disabled:opacity-60">
+            {busy === "setup" ? "Création…" : "Générer le wallet treasury"}
+          </button>
+        )}
+      </div>
+
+      {s.treasuryConfigured && s.network === "devnet" && (
+        <div className="bg-card border border-border rounded-2xl p-4 space-y-2">
+          <h3 className="font-semibold">2. Financer la treasury (devnet)</h3>
+          <button onClick={() => run("air", () => airdropFn(), "Airdrop 2 SOL OK")} disabled={!!busy}
+            className="w-full bg-secondary rounded-xl py-3 font-semibold disabled:opacity-60">
+            {busy === "air" ? "Airdrop…" : "Airdrop 2 SOL"}
+          </button>
+        </div>
+      )}
+
+      {s.treasuryConfigured && (
+        <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+          <h3 className="font-semibold">3. Token $KRI (mint SPL)</h3>
+          {s.mintAddress ? (
+            <>
+              <div className="bg-secondary rounded-xl p-3 flex items-center justify-between gap-2">
+                <code className="text-xs break-all">{s.mintAddress}</code>
+                <button onClick={() => copy(s.mintAddress)} className="p-1.5 rounded hover:bg-muted"><Copy className="w-3.5 h-3.5" /></button>
+              </div>
+              <p className="text-sm">Supply totale : <strong>{fmtKri(s.mintSupply)}</strong> · Decimals : {s.decimals}</p>
+              <a href={explorer(s.mintAddress)} target="_blank" rel="noreferrer" className="text-xs underline text-primary">Voir sur l'explorer ↗</a>
+            </>
+          ) : (
+            <>
+              <label className="block text-xs uppercase text-muted-foreground">Supply initiale (KRI)</label>
+              <input value={supply} onChange={(e) => setSupply(e.target.value.replace(/[^0-9]/g, ""))}
+                className="w-full bg-secondary rounded-xl px-3 py-2.5 text-sm outline-none" />
+              <button
+                onClick={() => run("deploy", () => deployFn({ data: { initial_supply: Number(supply) } }), "Token $KRI déployé 🚀")}
+                disabled={!!busy || !supply}
+                className="w-full bg-kori-gradient text-white rounded-xl py-3 font-semibold disabled:opacity-60">
+                {busy === "deploy" ? "Déploiement…" : "Déployer le token"}
+              </button>
+              <p className="text-xs text-muted-foreground">Requiert la treasury financée (~0.5 SOL minimum).</p>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
