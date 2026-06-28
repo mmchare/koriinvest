@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect, Link, useRouterState } from "@tanstack/react-router";
 import { Home, Gift, Lock, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 export const Route = createFileRoute("/app")({
   ssr: false,
@@ -25,6 +26,7 @@ function AppLayout() {
       <div className="mx-auto max-w-md min-h-screen pb-24 flex flex-col">
         <Outlet />
       </div>
+      <InstallPrompt />
       <nav className="fixed bottom-0 inset-x-0 z-40 pointer-events-none">
         <div className="mx-auto max-w-md px-4 safe-bottom pointer-events-auto">
           <div className="bg-card/95 backdrop-blur border border-border rounded-2xl shadow-card flex justify-around py-2">
