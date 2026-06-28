@@ -17,6 +17,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as AppWithdrawRouteImport } from './routes/app.withdraw'
 import { Route as AppWheelRouteImport } from './routes/app.wheel'
+import { Route as AppWalletRouteImport } from './routes/app.wallet'
 import { Route as AppVaultRouteImport } from './routes/app.vault'
 import { Route as AppReferralRouteImport } from './routes/app.referral'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
@@ -63,6 +64,11 @@ const AppWheelRoute = AppWheelRouteImport.update({
   path: '/wheel',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWalletRoute = AppWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppVaultRoute = AppVaultRouteImport.update({
   id: '/vault',
   path: '/vault',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/app/profile': typeof AppProfileRoute
   '/app/referral': typeof AppReferralRoute
   '/app/vault': typeof AppVaultRoute
+  '/app/wallet': typeof AppWalletRoute
   '/app/wheel': typeof AppWheelRoute
   '/app/withdraw': typeof AppWithdrawRoute
   '/r/$code': typeof RCodeRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/app/profile': typeof AppProfileRoute
   '/app/referral': typeof AppReferralRoute
   '/app/vault': typeof AppVaultRoute
+  '/app/wallet': typeof AppWalletRoute
   '/app/wheel': typeof AppWheelRoute
   '/app/withdraw': typeof AppWithdrawRoute
   '/r/$code': typeof RCodeRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/app/profile': typeof AppProfileRoute
   '/app/referral': typeof AppReferralRoute
   '/app/vault': typeof AppVaultRoute
+  '/app/wallet': typeof AppWalletRoute
   '/app/wheel': typeof AppWheelRoute
   '/app/withdraw': typeof AppWithdrawRoute
   '/r/$code': typeof RCodeRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/referral'
     | '/app/vault'
+    | '/app/wallet'
     | '/app/wheel'
     | '/app/withdraw'
     | '/r/$code'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/referral'
     | '/app/vault'
+    | '/app/wallet'
     | '/app/wheel'
     | '/app/withdraw'
     | '/r/$code'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/referral'
     | '/app/vault'
+    | '/app/wallet'
     | '/app/wheel'
     | '/app/withdraw'
     | '/r/$code'
@@ -249,6 +261,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWheelRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/wallet': {
+      id: '/app/wallet'
+      path: '/wallet'
+      fullPath: '/app/wallet'
+      preLoaderRoute: typeof AppWalletRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/vault': {
       id: '/app/vault'
       path: '/vault'
@@ -292,6 +311,7 @@ interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
   AppReferralRoute: typeof AppReferralRoute
   AppVaultRoute: typeof AppVaultRoute
+  AppWalletRoute: typeof AppWalletRoute
   AppWheelRoute: typeof AppWheelRoute
   AppWithdrawRoute: typeof AppWithdrawRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -302,6 +322,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
   AppReferralRoute: AppReferralRoute,
   AppVaultRoute: AppVaultRoute,
+  AppWalletRoute: AppWalletRoute,
   AppWheelRoute: AppWheelRoute,
   AppWithdrawRoute: AppWithdrawRoute,
   AppIndexRoute: AppIndexRoute,

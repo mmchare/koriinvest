@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useProfile, useTransactions } from "@/hooks/use-kori";
 import { fmtKri, fmtXaf, kriToXaf, currencyFor } from "@/lib/format";
-import { ArrowDownToLine, ArrowUpFromLine, Gift, Lock, Users, RefreshCw } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Gift, Lock, Users, RefreshCw, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/app/")({
   component: HomePage,
@@ -17,6 +17,8 @@ const TX_LABEL: Record<string, string> = {
   VAULT_LOCK: "Coffre — verrou",
   VAULT_PAYOUT: "Coffre — récolte",
   REFERRAL_BONUS: "Bonus parrainage",
+  ONCHAIN_WITHDRAW: "Transfert on-chain",
+  ADMIN_ADJUST: "Ajustement admin",
 };
 
 function HomePage() {
@@ -78,10 +80,11 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="px-5 mt-6 grid grid-cols-3 gap-3">
+      <section className="px-5 mt-6 grid grid-cols-4 gap-3">
         <ShortcutCard to="/app/wheel" icon={Gift} label="Roue" color="text-[color:var(--kori)]" />
         <ShortcutCard to="/app/vault" icon={Lock} label="Coffre" color="text-[color:var(--kori)]" />
         <ShortcutCard to="/app/referral" icon={Users} label="Parrainer" color="text-[color:var(--kori)]" />
+        <ShortcutCard to="/app/wallet" icon={Wallet} label="Wallet" color="text-[color:var(--kori)]" />
       </section>
 
       <section className="px-5 mt-7">
