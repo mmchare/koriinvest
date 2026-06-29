@@ -226,3 +226,86 @@ export const adminDeployMint = createServerFn({ method: "POST" })
     await supabaseAdmin.from("app_config").upsert({ key: "kri_mint_address", value: mint.toBase58() });
     return { ok: true, mint: mint.toBase58(), supply: data.initial_supply };
   });
+
+// ============ METAPLEX METADATA ============
+
+const metadataSchema = z.object({
+  name: z.string().min(1).max(32).default("KORI"),
+  symbol: z.string().min(1).max(10).default("KRI"),
+  uri: z.string().url().max(200),
+});
+
+export const adminSetTokenMetadata = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => metadataSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.userId);
+    const { loadSolanaConfig, loadTreasuryKeypair } = await import("./solana/config.server");
+    const { createUmi } = await import("@metaplex-foundation/umi-bundle-defaults");
+    const {
+      mplTokenMetadata,
+      createV1,
+      updateV1,
+      fetchMetadataFromSeeds,
+      TokenStandard,
+    } = await import("@metaplex-foundation/mpl-token-metadata");
+    const { keypairIdentity, publicKey, percentAmount, some, none } = await import(
+      "@metaplex-foundation/umi"
+    );
+
+    const cfg = await loadSolanaConfig();
+    if (!cfg.mintAddress) throw new Error("Mint $KRI non déployée");
+    const treasury = await loadTreasuryKeypair();
+
+    const umi = createUmi(cfg.rpcUrl).use(mplTokenMetadata());
+    const umiKp = umi.eddsa.createKeypairFromSecretKey(treasury.secretKey);
+    umi.use(keypairIdentity(umiKp));
+    const mintPk = publicKey(cfg.mintAddress);
+
+    // Check if metadata already exists
+    let exists = false;
+    try {
+      await fetchMetadataFromSeeds(umi, { mint: mintPk });
+      exists = true;
+    } catch {
+      exists = false;
+    }
+
+    let signature: string;
+    if (!exists) {
+      const builder = createV1(umi, {
+        mint: mintPk,
+        authority: umi.identity,
+        name: data.name,
+        symbol: data.symbol,
+        uri: data.uri,
+        sellerFeeBasisPoints: percentAmount(0),
+        tokenStandard: TokenStandard.Fungible,
+      });
+      const res = await builder.sendAndConfirm(umi);
+      signature = Buffer.from(res.signature).toString("base64");
+    } else {
+      const res = await updateV1(umi, {
+        mint: mintPk,
+        authority: umi.identity,
+        data: some({
+          name: data.name,
+          symbol: data.symbol,
+          uri: data.uri,
+          sellerFeeBasisPoints: 0,
+          creators: none(),
+        }),
+      }).sendAndConfirm(umi);
+      signature = Buffer.from(res.signature).toString("base64");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("app_config").upsert([
+      { key: "kri_metadata_uri", value: data.uri },
+      { key: "kri_metadata_name", value: data.name },
+      { key: "kri_metadata_symbol", value: data.symbol },
+    ]);
+
+    return { ok: true, action: exists ? "updated" : "created", signature };
+  });
+
