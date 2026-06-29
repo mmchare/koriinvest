@@ -373,9 +373,13 @@ function Solana() {
   const setupFn = useServerFn(adminSetupTreasury);
   const airdropFn = useServerFn(adminAirdropDevnet);
   const deployFn = useServerFn(adminDeployMint);
+  const metaFn = useServerFn(adminSetTokenMetadata);
   const { data: s, isLoading } = useQuery({ queryKey: ["solana-status"], queryFn: () => statusFn() });
   const [supply, setSupply] = useState("1000000000");
   const [busy, setBusy] = useState<string>("");
+  const defaultMetaUri = typeof window !== "undefined" ? `${window.location.origin}/api/public/token-metadata` : "";
+  const [metaUri, setMetaUri] = useState("");
+
 
   async function run(name: string, fn: () => Promise<unknown>, success: string) {
     setBusy(name);
