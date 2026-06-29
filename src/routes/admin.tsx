@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { adminProcessWithdrawal, adminConfirmDeposit, adminBlockUser } from "@/lib/kori.functions";
 import { adminAdjustBalance } from "@/lib/admin.functions";
 import { adminBroadcastPush } from "@/lib/push.functions";
-import { adminGetSolanaStatus, adminSetupTreasury, adminAirdropDevnet, adminDeployMint } from "@/lib/solana.functions";
+import { adminGetSolanaStatus, adminSetupTreasury, adminAirdropDevnet, adminDeployMint, adminSetTokenMetadata } from "@/lib/solana.functions";
 import { fmtKri, fmtXaf } from "@/lib/format";
 import { ArrowLeft, Check, X, Search, Ban, Unlock, Sliders, Send, BarChart3, Coins, Copy } from "lucide-react";
 import { toast } from "sonner";
