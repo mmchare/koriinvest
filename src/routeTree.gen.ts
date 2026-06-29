@@ -22,6 +22,7 @@ import { Route as AppVaultRouteImport } from './routes/app.vault'
 import { Route as AppReferralRouteImport } from './routes/app.referral'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppDepositRouteImport } from './routes/app.deposit'
+import { Route as ApiPublicTokenMetadataRouteImport } from './routes/api/public/token-metadata'
 import { Route as ApiPublicWebhooksNotchpayRouteImport } from './routes/api/public/webhooks/notchpay'
 
 const AuthRoute = AuthRouteImport.update({
@@ -89,6 +90,11 @@ const AppDepositRoute = AppDepositRouteImport.update({
   path: '/deposit',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicTokenMetadataRoute = ApiPublicTokenMetadataRouteImport.update({
+  id: '/api/public/token-metadata',
+  path: '/api/public/token-metadata',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksNotchpayRoute =
   ApiPublicWebhooksNotchpayRouteImport.update({
     id: '/api/public/webhooks/notchpay',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/app/withdraw': typeof AppWithdrawRoute
   '/r/$code': typeof RCodeRoute
   '/app/': typeof AppIndexRoute
+  '/api/public/token-metadata': typeof ApiPublicTokenMetadataRoute
   '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
 }
 export interface FileRoutesByTo {
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/app/withdraw': typeof AppWithdrawRoute
   '/r/$code': typeof RCodeRoute
   '/app': typeof AppIndexRoute
+  '/api/public/token-metadata': typeof ApiPublicTokenMetadataRoute
   '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
 }
 export interface FileRoutesById {
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/app/withdraw': typeof AppWithdrawRoute
   '/r/$code': typeof RCodeRoute
   '/app/': typeof AppIndexRoute
+  '/api/public/token-metadata': typeof ApiPublicTokenMetadataRoute
   '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
 }
 export interface FileRouteTypes {
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/app/withdraw'
     | '/r/$code'
     | '/app/'
+    | '/api/public/token-metadata'
     | '/api/public/webhooks/notchpay'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/app/withdraw'
     | '/r/$code'
     | '/app'
+    | '/api/public/token-metadata'
     | '/api/public/webhooks/notchpay'
   id:
     | '__root__'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/app/withdraw'
     | '/r/$code'
     | '/app/'
+    | '/api/public/token-metadata'
     | '/api/public/webhooks/notchpay'
   fileRoutesById: FileRoutesById
 }
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
   RCodeRoute: typeof RCodeRoute
+  ApiPublicTokenMetadataRoute: typeof ApiPublicTokenMetadataRoute
   ApiPublicWebhooksNotchpayRoute: typeof ApiPublicWebhooksNotchpayRoute
 }
 
@@ -296,6 +309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDepositRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/token-metadata': {
+      id: '/api/public/token-metadata'
+      path: '/api/public/token-metadata'
+      fullPath: '/api/public/token-metadata'
+      preLoaderRoute: typeof ApiPublicTokenMetadataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/notchpay': {
       id: '/api/public/webhooks/notchpay'
       path: '/api/public/webhooks/notchpay'
@@ -336,6 +356,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
   RCodeRoute: RCodeRoute,
+  ApiPublicTokenMetadataRoute: ApiPublicTokenMetadataRoute,
   ApiPublicWebhooksNotchpayRoute: ApiPublicWebhooksNotchpayRoute,
 }
 export const routeTree = rootRouteImport

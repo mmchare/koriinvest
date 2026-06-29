@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { adminProcessWithdrawal, adminConfirmDeposit, adminBlockUser } from "@/lib/kori.functions";
 import { adminAdjustBalance } from "@/lib/admin.functions";
 import { adminBroadcastPush } from "@/lib/push.functions";
-import { adminGetSolanaStatus, adminSetupTreasury, adminAirdropDevnet, adminDeployMint } from "@/lib/solana.functions";
+import { adminGetSolanaStatus, adminSetupTreasury, adminAirdropDevnet, adminDeployMint, adminSetTokenMetadata } from "@/lib/solana.functions";
 import { fmtKri, fmtXaf } from "@/lib/format";
 import { ArrowLeft, Check, X, Search, Ban, Unlock, Sliders, Send, BarChart3, Coins, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -373,9 +373,13 @@ function Solana() {
   const setupFn = useServerFn(adminSetupTreasury);
   const airdropFn = useServerFn(adminAirdropDevnet);
   const deployFn = useServerFn(adminDeployMint);
+  const metaFn = useServerFn(adminSetTokenMetadata);
   const { data: s, isLoading } = useQuery({ queryKey: ["solana-status"], queryFn: () => statusFn() });
   const [supply, setSupply] = useState("1000000000");
   const [busy, setBusy] = useState<string>("");
+  const defaultMetaUri = typeof window !== "undefined" ? `${window.location.origin}/api/public/token-metadata` : "";
+  const [metaUri, setMetaUri] = useState("");
+
 
   async function run(name: string, fn: () => Promise<unknown>, success: string) {
     setBusy(name);
@@ -462,6 +466,32 @@ function Solana() {
           )}
         </div>
       )}
+
+      {s.mintAddress && (
+        <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+          <h3 className="font-semibold">4. Métadonnées Metaplex (nom + logo)</h3>
+          {s.metadataUri ? (
+            <div className="bg-secondary rounded-xl p-3 text-xs space-y-1">
+              <p><strong>{s.metadataName}</strong> ({s.metadataSymbol})</p>
+              <a href={s.metadataUri} target="_blank" rel="noreferrer" className="underline break-all text-primary">{s.metadataUri}</a>
+              <p className="text-muted-foreground">Phantom / Solscan affichent désormais le nom et le logo. Tu peux relancer pour mettre à jour.</p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Le token apparaît actuellement par son adresse uniquement. Lance Metaplex pour publier nom + logo.</p>
+          )}
+          <label className="block text-xs uppercase text-muted-foreground">URI du JSON off-chain</label>
+          <input value={metaUri} onChange={(e) => setMetaUri(e.target.value)} placeholder={defaultMetaUri}
+            className="w-full bg-secondary rounded-xl px-3 py-2.5 text-sm outline-none" />
+          <button
+            onClick={() => run("meta", () => metaFn({ data: { name: "KORI", symbol: "KRI", uri: (metaUri || defaultMetaUri).trim() } }), "Métadonnées publiées ✨")}
+            disabled={!!busy}
+            className="w-full bg-kori-gradient text-white rounded-xl py-3 font-semibold disabled:opacity-60">
+            {busy === "meta" ? "Publication on-chain…" : s.metadataUri ? "Mettre à jour les métadonnées" : "Publier nom + logo (Metaplex)"}
+          </button>
+          <p className="text-xs text-muted-foreground">L'URI doit être publique et renvoyer un JSON conforme (name, symbol, image). Par défaut : route intégrée à l'app.</p>
+        </div>
+      )}
     </div>
   );
 }
+

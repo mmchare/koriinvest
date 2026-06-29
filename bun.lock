@@ -6,6 +6,9 @@
       "name": "tanstack_start_ts",
       "dependencies": {
         "@hookform/resolvers": "^5.2.2",
+        "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
+        "@metaplex-foundation/umi": "^1.5.1",
+        "@metaplex-foundation/umi-bundle-defaults": "^1.5.1",
         "@radix-ui/react-accordion": "^1.2.12",
         "@radix-ui/react-alert-dialog": "^1.1.15",
         "@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -251,6 +254,44 @@
     "@lovable.dev/vite-plugin-hmr-gate": ["@lovable.dev/vite-plugin-hmr-gate@1.1.0", "", { "peerDependencies": { "vite": ">=5.0.0 <9.0.0" } }, "sha512-6pFl5PW867oN0g/AV9dGg6d7U+aLwnrOuW2lC5i9LCfMmTFPDERhl+cKXQ5GOrll51xESVPmMos2964+txupCw=="],
 
     "@lovable.dev/vite-tanstack-config": ["@lovable.dev/vite-tanstack-config@2.6.2", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/vite-tanstack-config/-/vite-tanstack-config-2.6.2.tgz", { "dependencies": { "@lovable.dev/vite-plugin-dev-server-bridge": "^1.0.2", "@lovable.dev/vite-plugin-hmr-gate": "^1.1.0", "lightningcss": "^1.30.0", "lovable-tagger": "1.2.0" }, "peerDependencies": { "@tailwindcss/vite": ">=4.0.0", "@tanstack/react-start": ">=1.100.0", "@vitejs/plugin-react": ">=4.0.0", "nitro": ">=3.0.260603-beta", "vite": ">=5.0.0 <9.0.0", "vite-tsconfig-paths": ">=6.0.0" }, "optionalPeers": ["nitro"] }, "sha512-STrsGQ3MLlqd4DYtySOm8Qt7gOEX1mT736wfTVBFV3Ln77+O5JU6gW2x4ogTpgSjRQtl3gvYw/qMgPJd55ZfLQ=="],
+
+    "@metaplex-foundation/mpl-token-metadata": ["@metaplex-foundation/mpl-token-metadata@3.4.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/mpl-token-metadata/-/mpl-token-metadata-3.4.0.tgz", { "dependencies": { "@metaplex-foundation/mpl-toolbox": "^0.10.0" }, "peerDependencies": { "@metaplex-foundation/umi": ">= 0.8.2 <= 1" } }, "sha512-AxBAYCK73JWxY3g9//z/C9krkR0t1orXZDknUPS4+GjwGH2vgPfsk04yfZ31Htka2AdS9YE/3wH7sMUBHKn9Rg=="],
+
+    "@metaplex-foundation/mpl-toolbox": ["@metaplex-foundation/mpl-toolbox@0.10.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/mpl-toolbox/-/mpl-toolbox-0.10.0.tgz", { "peerDependencies": { "@metaplex-foundation/umi": ">= 0.8.2 <= 1" } }, "sha512-84KD1L5cFyw5xnntHwL4uPwfcrkKSiwuDeypiVr92qCUFuF3ZENa2zlFVPu+pQcjTlod2LmEX3MhBmNjRMpdKg=="],
+
+    "@metaplex-foundation/umi": ["@metaplex-foundation/umi@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi/-/umi-1.5.1.tgz", { "dependencies": { "@metaplex-foundation/umi-options": "^1.5.1", "@metaplex-foundation/umi-public-keys": "^1.5.1", "@metaplex-foundation/umi-serializers": "^1.5.1" } }, "sha512-ONRv5a0kv+23AMlR8oyFBHnjVg3o3N8pUfFcV4gzbg6OgZf87zHsPWBfED3OTJqx267v1bEn6d6DABXNFq9Z3A=="],
+
+    "@metaplex-foundation/umi-bundle-defaults": ["@metaplex-foundation/umi-bundle-defaults@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-bundle-defaults/-/umi-bundle-defaults-1.5.1.tgz", { "dependencies": { "@metaplex-foundation/umi-downloader-http": "^1.5.1", "@metaplex-foundation/umi-eddsa-web3js": "^1.5.1", "@metaplex-foundation/umi-http-fetch": "^1.5.1", "@metaplex-foundation/umi-program-repository": "^1.5.1", "@metaplex-foundation/umi-rpc-chunk-get-accounts": "^1.5.1", "@metaplex-foundation/umi-rpc-web3js": "^1.5.1", "@metaplex-foundation/umi-serializer-data-view": "^1.5.1", "@metaplex-foundation/umi-transaction-factory-web3js": "^1.5.1" }, "peerDependencies": { "@metaplex-foundation/umi": "^1.5.1", "@solana/web3.js": "^1.72.0" } }, "sha512-7qoXenAkQbcj468HGAeLZDyg3eEhcS9rWAnGqjnKgWOlL1czL2Qwho0FEtqOv57IHwAJSTpbHbcvABmdpTjjdw=="],
+
+    "@metaplex-foundation/umi-downloader-http": ["@metaplex-foundation/umi-downloader-http@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-downloader-http/-/umi-downloader-http-1.5.1.tgz", { "peerDependencies": { "@metaplex-foundation/umi": "^1.5.1" } }, "sha512-1s9gSTaDtwELyxBRE6Wmdr3xWeb4Z1uU04dj3Hg8VU+TN6/3wchh93+rIGZT5D3zzdh4+yPxdYV+4ZEr3T5glQ=="],
+
+    "@metaplex-foundation/umi-eddsa-web3js": ["@metaplex-foundation/umi-eddsa-web3js@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-eddsa-web3js/-/umi-eddsa-web3js-1.5.1.tgz", { "dependencies": { "@metaplex-foundation/umi-web3js-adapters": "^1.5.1", "@noble/curves": "^1.0.0", "yaml": "^2.7.0" }, "peerDependencies": { "@metaplex-foundation/umi": "^1.5.1", "@solana/web3.js": "^1.72.0" } }, "sha512-ZlzmXXAa1Ujk00G5TmqXM81J25+k/8sqt0zxBUlLTUSOxzlhxhlUKdErIhpHazbKq+eGck+Onm17oAwVKdKAcw=="],
+
+    "@metaplex-foundation/umi-http-fetch": ["@metaplex-foundation/umi-http-fetch@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-http-fetch/-/umi-http-fetch-1.5.1.tgz", { "dependencies": { "node-fetch": "^2.6.7" }, "peerDependencies": { "@metaplex-foundation/umi": "^1.5.1" } }, "sha512-AOjZJo3Ua4a2FvgA85x5f0TkMSb+13Ao3uLIQ9FbScV42kqZnDox8KjJ7tKm1ZtYDlCYD0pSFMKPOC9NPDnHDg=="],
+
+    "@metaplex-foundation/umi-options": ["@metaplex-foundation/umi-options@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-options/-/umi-options-1.5.1.tgz", {}, "sha512-ZE6uXgFA3rElFq4gJxZM2diAqZdFqL65bOnAggwdnnei5XXRzFyNF16wYSqlHnPLvG6ohRHWiXww8d2Mb83xFg=="],
+
+    "@metaplex-foundation/umi-program-repository": ["@metaplex-foundation/umi-program-repository@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-program-repository/-/umi-program-repository-1.5.1.tgz", { "peerDependencies": { "@metaplex-foundation/umi": "^1.5.1" } }, "sha512-E5W0IjwFgDGuBTshISbbEh/s8deqxcOzzEjOOlYdMXnevVsfNLwBBIAY4NPJg3v5vpFlKODwUGB5BxCUVthzJg=="],
+
+    "@metaplex-foundation/umi-public-keys": ["@metaplex-foundation/umi-public-keys@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-public-keys/-/umi-public-keys-1.5.1.tgz", { "dependencies": { "@metaplex-foundation/umi-serializers-encodings": "^1.5.1" } }, "sha512-joTnI1mRtYRfIaTo98uaYRjBPszsdyHuq0vvd6QbSX+MPvu3enkWi+UicuykEc3VXd5tcGdNMiGSx4jgXG6pkw=="],
+
+    "@metaplex-foundation/umi-rpc-chunk-get-accounts": ["@metaplex-foundation/umi-rpc-chunk-get-accounts@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-rpc-chunk-get-accounts/-/umi-rpc-chunk-get-accounts-1.5.1.tgz", { "peerDependencies": { "@metaplex-foundation/umi": "^1.5.1" } }, "sha512-3dnGobT1Xwul7fXzQr8660UHSnFOCWEed4T449oNekrVsHp2o00fdOqjXwo11DYhS1rjm+gbzRSazRKb62uF2Q=="],
+
+    "@metaplex-foundation/umi-rpc-web3js": ["@metaplex-foundation/umi-rpc-web3js@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-rpc-web3js/-/umi-rpc-web3js-1.5.1.tgz", { "dependencies": { "@metaplex-foundation/umi-web3js-adapters": "^1.5.1" }, "peerDependencies": { "@metaplex-foundation/umi": "^1.5.1", "@solana/web3.js": "^1.72.0" } }, "sha512-CxHyruh2gW2b/ZOwHFFtooOgtu9hBrOJTd3HUMtD/jpaturApa3itsL/zNt4K34tELzVIUL7N78LDjNpzbu9Kw=="],
+
+    "@metaplex-foundation/umi-serializer-data-view": ["@metaplex-foundation/umi-serializer-data-view@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-serializer-data-view/-/umi-serializer-data-view-1.5.1.tgz", { "peerDependencies": { "@metaplex-foundation/umi": "^1.5.1" } }, "sha512-9Wxqk3bGVJ0xNmHhHrOUhdu/90Q1IT3FZRZN4eGckb0sf7Bgls7kBTkFfgXFmUh2VBnE0GnnncXeHKtop5RSFA=="],
+
+    "@metaplex-foundation/umi-serializers": ["@metaplex-foundation/umi-serializers@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-serializers/-/umi-serializers-1.5.1.tgz", { "dependencies": { "@metaplex-foundation/umi-options": "^1.5.1", "@metaplex-foundation/umi-public-keys": "^1.5.1", "@metaplex-foundation/umi-serializers-core": "^1.5.1", "@metaplex-foundation/umi-serializers-encodings": "^1.5.1", "@metaplex-foundation/umi-serializers-numbers": "^1.5.1" } }, "sha512-scXciBylbJ4iwfxOF1Xx2XiBzoYUD8fSKWTsMal5Rj1hMRDe6b2XZcsBOjio61iAr8aTtFPmKpqxeBdLwmQ0ZQ=="],
+
+    "@metaplex-foundation/umi-serializers-core": ["@metaplex-foundation/umi-serializers-core@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-serializers-core/-/umi-serializers-core-1.5.1.tgz", {}, "sha512-6nYsbTCLq421x7JT1B3/iNgPpSARj/wL9naoKbOreHrk2ip/4R7vQstVRMl0Gx+Hv2tHnEIbFo3JBtWyC377Qw=="],
+
+    "@metaplex-foundation/umi-serializers-encodings": ["@metaplex-foundation/umi-serializers-encodings@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-serializers-encodings/-/umi-serializers-encodings-1.5.1.tgz", { "dependencies": { "@metaplex-foundation/umi-serializers-core": "^1.5.1" } }, "sha512-cVvwWmREE/Pmvjvsd50F18P53HDT0vzZECD6uYWIVzxgwpOiRDFu6r/vGbweomHoWzfTvuU6hiKuKv2KsOoXQA=="],
+
+    "@metaplex-foundation/umi-serializers-numbers": ["@metaplex-foundation/umi-serializers-numbers@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-serializers-numbers/-/umi-serializers-numbers-1.5.1.tgz", { "dependencies": { "@metaplex-foundation/umi-serializers-core": "^1.5.1" } }, "sha512-7DVF1VJIdT44Pe6qWKaqGu4YVgE10OeLMYpm7C16SujSBgQGB/I2bh8NBifyH2R3oHhoyfE9qgIKB3dgRazN6A=="],
+
+    "@metaplex-foundation/umi-transaction-factory-web3js": ["@metaplex-foundation/umi-transaction-factory-web3js@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-transaction-factory-web3js/-/umi-transaction-factory-web3js-1.5.1.tgz", { "dependencies": { "@metaplex-foundation/umi-web3js-adapters": "^1.5.1" }, "peerDependencies": { "@metaplex-foundation/umi": "^1.5.1", "@solana/web3.js": "^1.72.0" } }, "sha512-g4NfvtnmXtH1Q/Y9LdCsFtDRHQZmZWW7uKz+N9a+IVsJTTvpWFALMHm66dFDQGa0ExAYxAj7j6uZH2qDn0zarA=="],
+
+    "@metaplex-foundation/umi-web3js-adapters": ["@metaplex-foundation/umi-web3js-adapters@1.5.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metaplex-foundation/umi-web3js-adapters/-/umi-web3js-adapters-1.5.1.tgz", { "dependencies": { "buffer": "^6.0.3" }, "peerDependencies": { "@metaplex-foundation/umi": "^1.5.1", "@solana/web3.js": "^1.72.0" } }, "sha512-6W3JElD0B0EbgHofVKqk4PbP/JDrUHIKWciM7tEuXTDXbuXbSECDe7qlTU0JZXmVZNfYufI6FHnkCfPys2ZnIQ=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.4", "", { "dependencies": { "@tybys/wasm-util": "^0.10.1" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-3NQNNgA1YSlJb/kMH1ildASP9HW7/7kYnRI2szWJaofaS1hWmbGI4H+d3+22aGzXXN9IJ+n+GiFVcGipJP18ow=="],
 
@@ -1375,6 +1416,8 @@
     "xmlbuilder2": ["xmlbuilder2@4.0.3", "", { "dependencies": { "@oozcitak/dom": "^2.0.2", "@oozcitak/infra": "^2.0.2", "@oozcitak/util": "^10.0.0", "js-yaml": "^4.1.1" } }, "sha512-bx8Q1STctnNaaDymWnkfQLKofs0mGNN7rLLapJlGuV3VlvegD7Ls4ggMjE3aUSWItCCzU0PEv45lI87iSigiCA=="],
 
     "yallist": ["yallist@3.1.1", "", {}, "sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g=="],
+
+    "yaml": ["yaml@2.9.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/yaml/-/yaml-2.9.0.tgz", { "bin": { "yaml": "bin.mjs" } }, "sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA=="],
 
     "yocto-queue": ["yocto-queue@0.1.0", "", {}, "sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q=="],
 

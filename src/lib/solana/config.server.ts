@@ -7,6 +7,9 @@ export type SolanaConfig = {
   mintAddress: string;
   treasuryPubkey: string;
   decimals: number;
+  metadataUri: string;
+  metadataName: string;
+  metadataSymbol: string;
 };
 
 export async function loadSolanaConfig(): Promise<SolanaConfig> {
@@ -21,8 +24,12 @@ export async function loadSolanaConfig(): Promise<SolanaConfig> {
     mintAddress: map.get("kri_mint_address") || "",
     treasuryPubkey: map.get("kri_treasury_pubkey") || "",
     decimals: Number(map.get("kri_decimals") || 4),
+    metadataUri: map.get("kri_metadata_uri") || "",
+    metadataName: map.get("kri_metadata_name") || "",
+    metadataSymbol: map.get("kri_metadata_symbol") || "",
   };
 }
+
 
 export function getConnection(rpcUrl: string): Connection {
   return new Connection(rpcUrl, "confirmed");
