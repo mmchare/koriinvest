@@ -15,6 +15,7 @@ export default defineConfig({
           replacement: new URL("./src/lib/tslib-compat.js", import.meta.url).pathname,
         },
       ],
+      conditions: ["node", "import", "module", "browser", "default"],
     },
   },
   tanstackStart: {
