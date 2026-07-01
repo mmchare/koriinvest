@@ -1,14 +1,14 @@
 // @lovable.dev/vite-tanstack-config already includes tanstackStart, viteReact, tailwindcss,
 // tsConfigPaths, nitro, componentTagger, VITE_* env, @ alias, dedupes, error loggers.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import { createRequire } from "module";
-import { dirname, resolve as pathResolve } from "path";
+import { resolve as pathResolve } from "path";
+import { fileURLToPath } from "url";
 
-const require = createRequire(import.meta.url);
-const nodeAlias = (pkg: string, sub = "dist/index.node.mjs") => {
-  const dir = dirname(require.resolve(`${pkg}/package.json`));
-  return { find: new RegExp(`^${pkg.replace(/[/\\-]/g, (m) => "\\" + m)}$`), replacement: pathResolve(dir, sub) };
-};
+const projectRoot = pathResolve(fileURLToPath(import.meta.url), "..");
+const nodeAlias = (pkg: string, sub = "dist/index.node.mjs") => ({
+  find: new RegExp(`^${pkg.replace(/[/\\-]/g, (m) => "\\" + m)}$`),
+  replacement: pathResolve(projectRoot, "node_modules", pkg, sub),
+});
 
 export default defineConfig({
   vite: {
@@ -16,7 +16,7 @@ export default defineConfig({
       alias: [
         {
           find: /^tslib$/,
-          replacement: new URL("./src/lib/tslib-compat.js", import.meta.url).pathname,
+          replacement: pathResolve(projectRoot, "src/lib/tslib-compat.js"),
         },
         // These packages don't declare "workerd"/"worker" export conditions so rolldown
         // (used by the vercel/nitro build) fails to resolve them. Alias to the node ESM build directly.
