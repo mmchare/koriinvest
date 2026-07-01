@@ -1,9 +1,5 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, nitro (build-only using cloudflare as a default target),
-//     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
-//     error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
+// @lovable.dev/vite-tanstack-config already includes tanstackStart, viteReact, tailwindcss,
+// tsConfigPaths, nitro, componentTagger, VITE_* env, @ alias, dedupes, error loggers.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
@@ -14,21 +10,20 @@ export default defineConfig({
           find: /^tslib$/,
           replacement: new URL("./src/lib/tslib-compat.js", import.meta.url).pathname,
         },
+        // These packages don't declare "workerd"/"worker" export conditions,
+        // so rolldown (used by nitro/vercel) fails to resolve them. Alias to the node ESM build.
+        { find: /^@solana\/codecs$/, replacement: "@solana/codecs/dist/index.node.mjs" },
+        { find: /^@solana\/codecs-core$/, replacement: "@solana/codecs-core/dist/index.node.mjs" },
+        { find: /^@solana\/codecs-numbers$/, replacement: "@solana/codecs-numbers/dist/index.node.mjs" },
+        { find: /^@solana\/codecs-strings$/, replacement: "@solana/codecs-strings/dist/index.node.mjs" },
+        { find: /^@solana\/codecs-data-structures$/, replacement: "@solana/codecs-data-structures/dist/index.node.mjs" },
+        { find: /^@solana\/errors$/, replacement: "@solana/errors/dist/index.node.mjs" },
+        { find: /^@solana\/options$/, replacement: "@solana/options/dist/index.node.mjs" },
+        { find: /^rpc-websockets$/, replacement: "rpc-websockets/dist/index.mjs" },
       ],
-      conditions: ["node", "import", "module", "browser", "default"],
-    },
-    environments: {
-      ssr: {
-        resolve: {
-          conditions: ["node", "import", "module", "browser", "default"],
-          externalConditions: ["node", "import", "module", "browser", "default"],
-        },
-      },
     },
   },
   tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
     server: { entry: "server" },
   },
   nitro: {
