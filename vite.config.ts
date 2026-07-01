@@ -17,6 +17,14 @@ export default defineConfig({
       ],
       conditions: ["node", "import", "module", "browser", "default"],
     },
+    environments: {
+      ssr: {
+        resolve: {
+          conditions: ["node", "import", "module", "browser", "default"],
+          externalConditions: ["node", "import", "module", "browser", "default"],
+        },
+      },
+    },
   },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
