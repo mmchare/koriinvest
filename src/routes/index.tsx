@@ -40,7 +40,7 @@ function Landing() {
           <div className="mt-8 grid grid-cols-2 gap-3">
             <Feature icon={Wallet} label="Dépôt instantané" />
             <Feature icon={Gift} label="Roue 24 h" />
-            <Feature icon={Sparkles} label="Coffre +10%" />
+            <Feature icon={Sparkles} label="Coffre +60%" />
             <Feature icon={ShieldCheck} label="Parrainage 5%" />
           </div>
 

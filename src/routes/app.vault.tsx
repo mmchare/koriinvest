@@ -13,9 +13,9 @@ export const Route = createFileRoute("/app/vault")({
 });
 
 const PLANS = [
-  { days: 7, rate: 0.015, label: "7 jours", desc: "Court terme" },
-  { days: 15, rate: 0.04, label: "15 jours", desc: "Populaire" },
-  { days: 30, rate: 0.10, label: "30 jours", desc: "Meilleur rendement" },
+  { days: 7, rate: 0.15, label: "7 jours", desc: "Court terme" },
+  { days: 15, rate: 0.30, label: "15 jours", desc: "Populaire" },
+  { days: 30, rate: 0.60, label: "30 jours", desc: "Meilleur rendement" },
 ] as const;
 
 function VaultPage() {

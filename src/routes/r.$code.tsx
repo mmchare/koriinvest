@@ -37,7 +37,7 @@ function ReferralLanding() {
         <div className="mt-8 space-y-3">
           <Feature icon={<Gift className="w-5 h-5" />} title="Bonus parrainage" desc="5% sur chaque dépôt + 3% sur les gains de ton parrain." />
           <Feature icon={<Zap className="w-5 h-5" />} title="Roue gratuite chaque jour" desc="Jusqu'à 500 KRI à gagner toutes les 24h." />
-          <Feature icon={<ShieldCheck className="w-5 h-5" />} title="Coffre-fort jusqu'à +10%" desc="Bloque tes KRI 7, 15 ou 30 jours et touche les intérêts." />
+          <Feature icon={<ShieldCheck className="w-5 h-5" />} title="Coffre-fort jusqu'à +60%" desc="Bloque tes KRI 7, 15 ou 30 jours et touche les intérêts." />
         </div>
 
         <Link to="/auth" search={{ mode: "signup", ref: upper }}
