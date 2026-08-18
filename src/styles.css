@@ -134,3 +134,10 @@
   to { transform: rotate(var(--spin-end, 1440deg)); }
 }
 .animate-wheel { animation: wheel-spin 4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+/* Masquer le badge "Edit with Lovable" injecté par la plateforme */
+#lovable-badge,
+[id*="lovable-badge"],
+a[href*="lovable.dev"] {
+  display: none !important;
+}
