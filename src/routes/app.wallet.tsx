@@ -18,7 +18,11 @@ function WalletPage() {
   const qc = useQueryClient();
   const getFn = useServerFn(getMyWallet);
   const convertFn = useServerFn(convertToOnchain);
-  const { data: wallet, isLoading } = useQuery({ queryKey: ["my-wallet"], queryFn: () => getFn() });
+  const { data: wallet, isLoading, error, refetch, isFetching } = useQuery({
+    queryKey: ["my-wallet"],
+    queryFn: () => getFn(),
+    retry: false,
+  });
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
 
