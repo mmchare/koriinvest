@@ -18,7 +18,11 @@ function WalletPage() {
   const qc = useQueryClient();
   const getFn = useServerFn(getMyWallet);
   const convertFn = useServerFn(convertToOnchain);
-  const { data: wallet, isLoading } = useQuery({ queryKey: ["my-wallet"], queryFn: () => getFn() });
+  const { data: wallet, isLoading, error, refetch, isFetching } = useQuery({
+    queryKey: ["my-wallet"],
+    queryFn: () => getFn(),
+    retry: false,
+  });
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -58,6 +62,26 @@ function WalletPage() {
 
       <section className="px-5 space-y-4 pb-6">
         {isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/30 rounded-2xl p-4 space-y-3">
+            <p className="font-semibold text-sm">Impossible de charger le wallet</p>
+            <p className="text-xs text-muted-foreground break-words">
+              {error instanceof Error ? error.message : "Erreur inconnue"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Si tu es sur le déploiement Vercel, cette page nécessite les variables serveur
+              (clé service backend, clé de chiffrement wallet). Elles ne sont injectées que sur
+              l'app publiée depuis Lovable.
+            </p>
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="bg-foreground text-background text-sm font-semibold rounded-xl px-4 py-2 disabled:opacity-60"
+            >
+              {isFetching ? "Nouvel essai…" : "Réessayer"}
+            </button>
+          </div>
+        )}
         {wallet && (
           <>
             <div className="bg-kori-gradient text-white rounded-2xl p-5 shadow-kori">
