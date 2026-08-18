@@ -7,32 +7,32 @@ import { z } from "zod";
 export const getMyWallet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { Keypair } = await import("@solana/web3.js");
     const bs58 = (await import("bs58")).default;
     const { encryptSecret } = await import("./solana/crypto.server");
-    const { loadSolanaConfig, getConnection, pubkey } = await import("./solana/config.server");
+    const { loadSolanaConfigVia, getConnection, pubkey } = await import("./solana/config.server");
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile, error: profErr } = await context.supabase
       .from("profiles")
-      .select("solana_pubkey,solana_secret_encrypted")
+      .select("solana_pubkey")
       .eq("id", context.userId)
       .maybeSingle();
+    if (profErr) throw new Error(profErr.message);
     if (!profile) throw new Error("Profil introuvable");
 
     let solanaPubkey = profile.solana_pubkey;
     if (!solanaPubkey) {
       const kp = Keypair.generate();
-      solanaPubkey = kp.publicKey.toBase58();
       const encrypted = encryptSecret(bs58.encode(kp.secretKey));
-      const { error } = await supabaseAdmin
-        .from("profiles")
-        .update({ solana_pubkey: solanaPubkey, solana_secret_encrypted: encrypted })
-        .eq("id", context.userId);
+      const { data: ensured, error } = await context.supabase.rpc("ensure_my_solana_wallet" as never, {
+        _pubkey: kp.publicKey.toBase58(),
+        _secret_encrypted: encrypted,
+      } as never);
       if (error) throw new Error(error.message);
+      solanaPubkey = ensured as unknown as string;
     }
 
-    const cfg = await loadSolanaConfig();
+    const cfg = await loadSolanaConfigVia(context.supabase as never);
     let onchainBalance = 0;
     if (cfg.mintAddress) {
       try {
@@ -64,32 +64,28 @@ export const convertToOnchain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => convertSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { loadSolanaConfig, getConnection, loadTreasuryKeypair, pubkey } = await import("./solana/config.server");
+    const { loadSolanaConfigVia, getConnection, loadTreasuryKeypair, pubkey } = await import("./solana/config.server");
     const { getOrCreateAssociatedTokenAccount, transfer } = await import("@solana/spl-token");
 
-    // Rate limit
-    const { data: rl } = await supabaseAdmin.rpc("check_rate_limit" as never, {
-      _user: context.userId, _action: "onchain_withdraw", _max: 3, _window_seconds: 600,
-    } as never);
-    if (!rl) throw new Error("Trop de demandes. Attends quelques minutes.");
-
-    const cfg = await loadSolanaConfig();
+    const cfg = await loadSolanaConfigVia(context.supabase as never);
     if (!cfg.mintAddress) throw new Error("Token $KRI pas encore déployé.");
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await context.supabase
       .from("profiles").select("solana_pubkey").eq("id", context.userId).maybeSingle();
     if (!profile?.solana_pubkey) throw new Error("Wallet Solana manquant. Ouvre l'onglet Wallet d'abord.");
 
-    // 1. Debit balance + create PENDING tx
-    const { data: initOut, error: initErr } = await supabaseAdmin.rpc("initiate_onchain_withdraw" as never, {
-      _user: context.userId, _amount: data.amount, _recipient: profile.solana_pubkey,
-    } as never);
+    // 1. Debit balance + create PENDING tx (self-scoped RPC, includes rate limit)
+    const { data: initOut, error: initErr } = await context.supabase.rpc(
+      "my_initiate_onchain_withdraw" as never,
+      { _amount: data.amount } as never,
+    );
     if (initErr) throw new Error(initErr.message);
-    const init = initOut as { ok: boolean; error?: string; tx_id?: string; min?: number };
+    const init = initOut as unknown as { ok: boolean; error?: string; tx_id?: string; min?: number };
     if (!init.ok) {
       if (init.error === "insufficient") throw new Error("Solde insuffisant");
       if (init.error === "min_amount") throw new Error(`Minimum ${init.min} KRI`);
+      if (init.error === "rate_limited") throw new Error("Trop de demandes. Attends quelques minutes.");
+      if (init.error === "no_wallet") throw new Error("Wallet Solana manquant.");
       throw new Error(init.error ?? "Erreur");
     }
 
@@ -106,14 +102,15 @@ export const convertToOnchain = createServerFn({ method: "POST" })
       const lamports = BigInt(Math.round(data.amount * 10 ** cfg.decimals));
       const sig = await transfer(conn, treasury, treasuryAta.address, userAta.address, treasury, lamports);
 
-      await supabaseAdmin.rpc("confirm_onchain_withdraw" as never, { _tx: init.tx_id, _signature: sig } as never);
+      await context.supabase.rpc("my_confirm_onchain_withdraw" as never, { _tx: init.tx_id, _signature: sig } as never);
       return { ok: true, signature: sig };
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Échec on-chain";
-      await supabaseAdmin.rpc("refund_onchain_withdraw" as never, { _tx: init.tx_id, _reason: msg.slice(0, 240) } as never);
+      await context.supabase.rpc("my_refund_onchain_withdraw" as never, { _tx: init.tx_id, _reason: msg.slice(0, 240) } as never);
       throw new Error("Transfert échoué : " + msg);
     }
   });
+
 
 // ============ ADMIN FUNCTIONS ============
 
