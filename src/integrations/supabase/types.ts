@@ -447,6 +447,11 @@ export type Database = {
         Args: { _amount: number; _days: number; _user: string }
         Returns: Json
       }
+      ensure_my_solana_wallet: {
+        Args: { _pubkey: string; _secret_encrypted: string }
+        Returns: string
+      }
+      get_solana_public_config: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -460,6 +465,15 @@ export type Database = {
       }
       initiate_withdrawal: {
         Args: { _amount_cfa: number; _phone: string; _user: string }
+        Returns: Json
+      }
+      my_confirm_onchain_withdraw: {
+        Args: { _signature: string; _tx: string }
+        Returns: Json
+      }
+      my_initiate_onchain_withdraw: { Args: { _amount: number }; Returns: Json }
+      my_refund_onchain_withdraw: {
+        Args: { _reason: string; _tx: string }
         Returns: Json
       }
       notchpay_credit_deposit: {
