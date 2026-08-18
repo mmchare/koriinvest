@@ -69,10 +69,10 @@ function WalletPage() {
               {error instanceof Error ? error.message : "Erreur inconnue"}
             </p>
             <p className="text-xs text-muted-foreground">
-              Si tu es sur le déploiement Vercel, cette page nécessite les variables serveur
-              (clé service backend, clé de chiffrement wallet). Elles ne sont injectées que sur
-              l'app publiée depuis Lovable.
+              Sur un déploiement externe (Vercel), vérifie que les variables serveur
+              SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY et KORI_WALLET_ENCRYPTION_KEY sont bien définies.
             </p>
+
             <button
               onClick={() => refetch()}
               disabled={isFetching}
