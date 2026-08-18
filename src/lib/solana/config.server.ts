@@ -59,3 +59,25 @@ export async function loadTreasuryKeypair(): Promise<Keypair> {
 export function pubkey(s: string): PublicKey {
   return new PublicKey(s);
 }
+
+/**
+ * Loads the public (non-secret) Solana config through an RLS-safe RPC.
+ * Works without the service role key (e.g. self-hosted deployments).
+ */
+export async function loadSolanaConfigVia(client: {
+  rpc: (fn: string, args?: unknown) => Promise<{ data: unknown; error: unknown }>;
+}): Promise<SolanaConfig> {
+  const { data } = await client.rpc("get_solana_public_config");
+  const map = (data ?? {}) as Record<string, string>;
+  const network = ((map["solana_network"] || "devnet") as "devnet" | "mainnet-beta");
+  return {
+    network,
+    rpcUrl: map["solana_rpc_url"] || clusterApiUrl(network),
+    mintAddress: map["kri_mint_address"] || "",
+    treasuryPubkey: map["kri_treasury_pubkey"] || "",
+    decimals: Number(map["kri_decimals"] || 4),
+    metadataUri: map["kri_metadata_uri"] || "",
+    metadataName: map["kri_metadata_name"] || "",
+    metadataSymbol: map["kri_metadata_symbol"] || "",
+  };
+}
