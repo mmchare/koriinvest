@@ -1,25 +1,10 @@
 import { useEffect, useState } from "react";
 import { Download, X, Share } from "lucide-react";
-
-type BIPEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
+import { isStandalone, isIOSSafari, useDeferredInstall, promptInstall } from "@/lib/install";
 
 const DISMISS_KEY = "kori_install_dismissed_at";
 const INSTALLED_KEY = "kori_pwa_installed";
 const DISMISS_DAYS = 7;
-
-function isStandalone() {
-  if (typeof window === "undefined") return true;
-  return (
-    window.matchMedia?.("(display-mode: standalone)").matches ||
-    window.matchMedia?.("(display-mode: fullscreen)").matches ||
-    window.matchMedia?.("(display-mode: minimal-ui)").matches ||
-    (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
-    document.referrer.startsWith("android-app://")
-  );
-}
 
 function wasInstalled() {
   try { return localStorage.getItem(INSTALLED_KEY) === "1"; } catch { return false; }
