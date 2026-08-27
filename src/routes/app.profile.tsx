@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, LogOut, Shield, Fingerprint, Trash2, Bell, BellOff } from "lucide-react";
+import { ArrowLeft, LogOut, Shield, Fingerprint, Trash2, Bell, BellOff, Download, Share, CheckCircle2 } from "lucide-react";
 import { useProfile, useIsAdmin } from "@/hooks/use-kori";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { webauthnList, webauthnRegisterStart, webauthnRegisterFinish, webauthnRemove } from "@/lib/webauthn.functions";
 import { savePushSubscription, removePushSubscription } from "@/lib/push.functions";
 import { pushSupported, subscribePush, unsubscribePush, getPushSubscription } from "@/lib/push-client";
+import { isStandalone, isIOSSafari, useDeferredInstall, promptInstall } from "@/lib/install";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
@@ -123,6 +124,8 @@ function ProfilePage() {
         <Row label="Code parrainage" value={profile?.referral_code ?? "—"} />
         <Row label="Pays" value={profile?.country_code ?? "—"} />
 
+        <InstallCard />
+
         <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
           <div className="flex items-center gap-3">
             <Fingerprint className="w-5 h-5 text-primary" />
@@ -183,6 +186,69 @@ function ProfilePage() {
           <LogOut className="w-5 h-5" /> <span className="font-semibold">Se déconnecter</span>
         </button>
       </section>
+    </div>
+  );
+}
+
+function InstallCard() {
+  const deferred = useDeferredInstall();
+  const [installed, setInstalled] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setInstalled(isStandalone());
+    const mql = window.matchMedia?.("(display-mode: standalone)");
+    const onChange = (e: MediaQueryListEvent) => { if (e.matches) setInstalled(true); };
+    mql?.addEventListener?.("change", onChange);
+    return () => mql?.removeEventListener?.("change", onChange);
+  }, []);
+
+  async function install() {
+    setBusy(true);
+    try {
+      const outcome = await promptInstall();
+      if (outcome === "accepted") {
+        setInstalled(true);
+        toast.success("KORI installée 🎉");
+      } else if (outcome === "unavailable") {
+        toast.info("Ouvre le menu de ton navigateur et choisis « Ajouter à l'écran d'accueil ».", { duration: 6000 });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const ios = typeof window !== "undefined" && isIOSSafari();
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
+      {installed ? (
+        <CheckCircle2 className="w-5 h-5 text-primary" />
+      ) : (
+        <div className="w-9 h-9 grid place-items-center rounded-xl bg-kori-gradient text-white shrink-0">
+          <Download className="w-4 h-4" />
+        </div>
+      )}
+      <div className="flex-1">
+        <p className="font-semibold">Installer l'application</p>
+        <p className="text-xs text-muted-foreground">
+          {installed
+            ? "KORI est déjà installée sur cet appareil"
+            : ios
+              ? "Appuie sur Partager puis « Sur l'écran d'accueil »"
+              : "Accès rapide depuis ton écran d'accueil"}
+        </p>
+      </div>
+      {!installed && !ios && (
+        <button
+          onClick={install}
+          disabled={busy}
+          className="px-3 py-2 rounded-xl text-sm font-semibold bg-kori-gradient text-white disabled:opacity-60"
+        >
+          {busy ? "…" : "Installer"}
+        </button>
+      )}
+      {!installed && ios && <Share className="w-4 h-4 text-muted-foreground" />}
     </div>
   );
 }
