@@ -1,4 +1,7 @@
 // KORI push-only service worker. No app-shell caching.
+// The no-op fetch handler below does NOT cache anything — it only satisfies
+// Chrome's installability criteria so the "Install app" prompt can appear.
+self.addEventListener("fetch", () => {});
 self.addEventListener("install", (e) => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
