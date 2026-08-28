@@ -211,7 +211,10 @@ function InstallCard() {
         setInstalled(true);
         toast.success("KORI installée 🎉");
       } else if (outcome === "unavailable") {
-        toast.info("Ouvre le menu de ton navigateur et choisis « Ajouter à l'écran d'accueil ».", { duration: 6000 });
+        toast.info(
+          "Ton navigateur ne propose pas l'installation automatique ici. Ouvre KORI dans Chrome (Android) puis : menu ⋮ → « Ajouter à l'écran d'accueil ».",
+          { duration: 8000 },
+        );
       }
     } finally {
       setBusy(false);
