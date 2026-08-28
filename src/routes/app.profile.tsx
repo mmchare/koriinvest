@@ -7,7 +7,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { webauthnList, webauthnRegisterStart, webauthnRegisterFinish, webauthnRemove } from "@/lib/webauthn.functions";
 import { savePushSubscription, removePushSubscription } from "@/lib/push.functions";
 import { pushSupported, subscribePush, unsubscribePush, getPushSubscription } from "@/lib/push-client";
-import { isStandalone, isIOSSafari, useDeferredInstall, promptInstall } from "@/lib/install";
+import { isStandalone, isIOSSafari, useDeferredInstall, promptInstall, getInstallDiagnostics } from "@/lib/install";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
@@ -211,11 +211,10 @@ function InstallCard() {
         setInstalled(true);
         toast.success("KORI installée 🎉");
       } else if (outcome === "unavailable") {
-        toast.info(
-          "Ton navigateur ne propose pas l'installation automatique ici. Ouvre KORI dans Chrome (Android) puis : menu ⋮ → « Ajouter à l'écran d'accueil ».",
-          { duration: 8000 },
-        );
+        const hint = await getInstallDiagnostics();
+        toast.info(hint, { duration: 9000 });
       }
+
     } finally {
       setBusy(false);
     }

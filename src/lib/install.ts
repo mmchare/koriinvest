@@ -66,3 +66,27 @@ export function useDeferredInstall() {
   }, []);
   return deferred;
 }
+
+/** Explains why the native install prompt is not available (best effort). */
+export async function getInstallDiagnostics(): Promise<string> {
+  const { isRefusedSwContext, ensureAppServiceWorker } = await import("./sw-register");
+  const refused = isRefusedSwContext();
+  if (refused === "iframe" || refused === "lovable-preview")
+    return "Ouvre le site dans un vrai onglet du navigateur (pas dans l'aperçu intégré).";
+  if (refused === "insecure-origin") return "L'installation exige une connexion HTTPS.";
+  if (refused === "no-serviceworker-support") return "Ce navigateur ne supporte pas l'installation.";
+  if (refused === "dev") return "Indisponible en mode développement.";
+  if (refused === "sw-off") return "Installation désactivée par le paramètre ?sw=off.";
+
+  const reg = await ensureAppServiceWorker();
+  if (!reg) return "Le service worker n'a pas pu être enregistré sur ce déploiement.";
+
+  try {
+    const res = await fetch("/manifest.webmanifest", { cache: "no-store" });
+    if (!res.ok) return "Le fichier manifest.webmanifest n'est pas accessible sur ce déploiement.";
+  } catch {
+    return "Impossible de charger le manifest de l'application.";
+  }
+
+  return "Recharge la page puis réessaie. Sinon : menu ⋮ du navigateur → « Installer l'application ».";
+}
