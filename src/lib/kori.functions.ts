@@ -2,11 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-async function enforceRateLimit(userId: string, action: string, max: number, windowSeconds: number) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.rpc("check_rate_limit" as never, {
-    _user: userId, _action: action, _max: max, _window_seconds: windowSeconds,
-  } as never);
+type SbClient = {
+  rpc: (fn: string, args?: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
+};
+
+async function enforceRateLimit(client: SbClient, action: string, max: number, windowSeconds: number) {
+  const { data, error } = await client.rpc("my_check_rate_limit", {
+    _action: action, _max: max, _window_seconds: windowSeconds,
+  });
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Trop de tentatives, réessaie dans quelques instants.");
 }
@@ -15,9 +18,9 @@ async function enforceRateLimit(userId: string, action: string, max: number, win
 export const spinWheel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await enforceRateLimit(context.userId, "spin_wheel", 3, 60);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin.rpc("spin_wheel" as never, { _user: context.userId } as never);
+    const sb = context.supabase as unknown as SbClient;
+    await enforceRateLimit(sb, "spin_wheel", 3, 60);
+    const { data, error } = await sb.rpc("my_spin_wheel");
     if (error) throw new Error(error.message);
     return data as { ok: boolean; reward_type?: string; reward?: number; error?: string; next_at?: string };
   });
@@ -28,10 +31,8 @@ export const createVault = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => createVaultSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: out, error } = await supabaseAdmin.rpc("create_vault" as never, {
-      _user: context.userId, _amount: data.amount, _days: data.days,
-    } as never);
+    const sb = context.supabase as unknown as SbClient;
+    const { data: out, error } = await sb.rpc("my_create_vault", { _amount: data.amount, _days: data.days });
     if (error) throw new Error(error.message);
     return out as { ok: boolean; vault_id?: string; profit?: number; error?: string };
   });
@@ -41,10 +42,8 @@ export const claimVault = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => claimVaultSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: out, error } = await supabaseAdmin.rpc("claim_vault" as never, {
-      _user: context.userId, _vault: data.vault_id,
-    } as never);
+    const sb = context.supabase as unknown as SbClient;
+    const { data: out, error } = await sb.rpc("my_claim_vault", { _vault: data.vault_id });
     if (error) throw new Error(error.message);
     return out as { ok: boolean; returned?: number; error?: string };
   });
@@ -58,9 +57,10 @@ export const initiateDeposit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => depositSchema.parse(d))
   .handler(async ({ data, context }) => {
-    await enforceRateLimit(context.userId, "deposit_init", 5, 300);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: cfg } = await supabaseAdmin.from("app_config").select("value").eq("key", "kri_per_xaf").maybeSingle();
+    const sb = context.supabase as unknown as SbClient;
+    await enforceRateLimit(sb, "deposit_init", 5, 300);
+    const { data: cfg } = await context.supabase
+      .from("app_config").select("value").eq("key", "kri_per_xaf").maybeSingle();
     const rate = Number(cfg?.value ?? 0.1);
     const kri = Math.round(data.amount_cfa * rate * 10000) / 10000;
 
@@ -69,8 +69,8 @@ export const initiateDeposit = createServerFn({ method: "POST" })
     let authorizationUrl: string | null = null;
 
     if (notchKey) {
-      // Get user email for NotchPay (required)
-      const { data: profile } = await supabaseAdmin.from("profiles").select("phone_number, display_name").eq("id", context.userId).maybeSingle();
+      const { data: profile } = await context.supabase
+        .from("profiles").select("phone_number, display_name").eq("id", context.userId).maybeSingle();
       const email = `${context.userId}@kori.app`;
       try {
         const resp = await fetch("https://api.notchpay.co/payments/initialize", {
@@ -97,17 +97,14 @@ export const initiateDeposit = createServerFn({ method: "POST" })
       }
     }
 
-    const { data: tx, error } = await supabaseAdmin.from("transactions").insert({
-      user_id: context.userId,
-      type: "DEPOSIT",
-      amount_cfa: data.amount_cfa,
-      amount_kori: kri,
-      status: "PENDING",
-      recipient_phone: data.phone,
-      provider_reference: providerRef,
-    }).select("id").single();
+    const { data: txId, error } = await sb.rpc("my_create_deposit", {
+      _amount_cfa: data.amount_cfa,
+      _amount_kori: kri,
+      _phone: data.phone,
+      _provider_reference: providerRef,
+    });
     if (error) throw new Error(error.message);
-    return { ok: true, tx_id: tx.id, kri, authorization_url: authorizationUrl };
+    return { ok: true, tx_id: txId as string, kri, authorization_url: authorizationUrl };
   });
 
 // ---- Withdrawal ----
@@ -119,11 +116,11 @@ export const initiateWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => withdrawSchema.parse(d))
   .handler(async ({ data, context }) => {
-    await enforceRateLimit(context.userId, "withdraw_init", 3, 600);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: out, error } = await supabaseAdmin.rpc("initiate_withdrawal" as never, {
-      _user: context.userId, _amount_cfa: data.amount_cfa, _phone: data.phone,
-    } as never);
+    const sb = context.supabase as unknown as SbClient;
+    await enforceRateLimit(sb, "withdraw_init", 3, 600);
+    const { data: out, error } = await sb.rpc("my_initiate_withdrawal", {
+      _amount_cfa: data.amount_cfa, _phone: data.phone,
+    });
     if (error) throw new Error(error.message);
     return out as { ok: boolean; tx_id?: string; kri?: number; error?: string };
   });
@@ -134,18 +131,17 @@ export const adminProcessWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => adminWithdrawSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: isAdmin } = await supabaseAdmin.rpc("has_role" as never, { _user_id: context.userId, _role: "admin" } as never);
-    if (!isAdmin) throw new Error("Forbidden");
-    const { data: out, error } = await supabaseAdmin.rpc("admin_process_withdrawal" as never, {
-      _admin: context.userId, _tx: data.tx_id, _approve: data.approve, _notes: data.notes ?? null,
-    } as never);
+    const sb = context.supabase as unknown as SbClient;
+    const { data: out, error } = await sb.rpc("admin_my_process_withdrawal", {
+      _tx: data.tx_id, _approve: data.approve, _notes: data.notes ?? null,
+    });
     if (error) throw new Error(error.message);
     try {
-      const { data: tx } = await supabaseAdmin.from("transactions").select("user_id, amount_kori, amount_cfa").eq("id", data.tx_id).maybeSingle();
+      const { data: tx } = await context.supabase
+        .from("transactions").select("user_id, amount_kori, amount_cfa").eq("id", data.tx_id).maybeSingle();
       if (tx) {
         const { sendPushToUser } = await import("./push.server");
-        await sendPushToUser(tx.user_id, {
+        await sendPushToUser(context.supabase as never, tx.user_id, {
           title: data.approve ? "Retrait validé ✅" : "Retrait refusé",
           body: data.approve ? `${tx.amount_cfa} XAF envoyés à ton Mobile Money.` : `Motif : ${data.notes ?? "non précisé"}. Tes ${tx.amount_kori} KRI sont recrédités.`,
           url: "/app",
@@ -160,18 +156,15 @@ export const adminConfirmDeposit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => adminDepositSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: isAdmin } = await supabaseAdmin.rpc("has_role" as never, { _user_id: context.userId, _role: "admin" } as never);
-    if (!isAdmin) throw new Error("Forbidden");
-    const { data: out, error } = await supabaseAdmin.rpc("admin_confirm_deposit" as never, {
-      _admin: context.userId, _tx: data.tx_id,
-    } as never);
+    const sb = context.supabase as unknown as SbClient;
+    const { data: out, error } = await sb.rpc("admin_my_confirm_deposit", { _tx: data.tx_id });
     if (error) throw new Error(error.message);
     try {
-      const { data: tx } = await supabaseAdmin.from("transactions").select("user_id, amount_kori").eq("id", data.tx_id).maybeSingle();
+      const { data: tx } = await context.supabase
+        .from("transactions").select("user_id, amount_kori").eq("id", data.tx_id).maybeSingle();
       if (tx) {
         const { sendPushToUser } = await import("./push.server");
-        await sendPushToUser(tx.user_id, { title: "Dépôt crédité ✅", body: `+${tx.amount_kori} KRI ajoutés à ton solde.`, url: "/app" });
+        await sendPushToUser(context.supabase as never, tx.user_id, { title: "Dépôt crédité ✅", body: `+${tx.amount_kori} KRI ajoutés à ton solde.`, url: "/app" });
       }
     } catch (_) { /* push optional */ }
     return out as { ok: boolean; error?: string };
@@ -182,10 +175,8 @@ export const adminBlockUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => blockUserSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: isAdmin } = await supabaseAdmin.rpc("has_role" as never, { _user_id: context.userId, _role: "admin" } as never);
-    if (!isAdmin) throw new Error("Forbidden");
-    const { error } = await supabaseAdmin.from("profiles").update({ is_blocked: data.blocked }).eq("id", data.user_id);
+    const { error } = await context.supabase
+      .from("profiles").update({ is_blocked: data.blocked }).eq("id", data.user_id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
