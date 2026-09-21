@@ -91,7 +91,7 @@ export const convertToOnchain = createServerFn({ method: "POST" })
 
     // 2. SPL transfer
     try {
-      const treasury = await loadTreasuryKeypair();
+      const treasury = await loadTreasuryKeypair(context.supabase as never);
       const conn = getConnection(cfg.rpcUrl);
       const mint = pubkey(cfg.mintAddress);
       const userPub = pubkey(profile.solana_pubkey);
@@ -114,18 +114,28 @@ export const convertToOnchain = createServerFn({ method: "POST" })
 
 // ============ ADMIN FUNCTIONS ============
 
-async function requireAdmin(userId: string) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin.rpc("has_role" as never, { _user_id: userId, _role: "admin" } as never);
+type SbClient = {
+  from: (t: string) => any;
+  rpc: (fn: string, args?: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
+};
+
+async function requireAdmin(client: SbClient) {
+  const { data, error } = await client.rpc("my_is_admin");
+  if (error) throw new Error(error.message);
   if (!data) throw new Error("Forbidden");
+}
+
+async function setConfig(client: SbClient, entries: Record<string, string>) {
+  const { error } = await client.rpc("admin_my_set_config", { _entries: entries });
+  if (error) throw new Error(error.message);
 }
 
 export const adminGetSolanaStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireAdmin(context.userId);
+    await requireAdmin(context.supabase as unknown as SbClient);
     const { loadSolanaConfig, getConnection, pubkey } = await import("./solana/config.server");
-    const cfg = await loadSolanaConfig();
+    const cfg = await loadSolanaConfig(context.supabase as never);
     let solBalance = 0;
     let mintSupply = 0;
     let treasuryKriBalance = 0;
@@ -156,13 +166,12 @@ export const adminGetSolanaStatus = createServerFn({ method: "POST" })
 export const adminSetupTreasury = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireAdmin(context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await requireAdmin(context.supabase as unknown as SbClient);
     const { Keypair } = await import("@solana/web3.js");
     const bs58 = (await import("bs58")).default;
     const { encryptSecret } = await import("./solana/crypto.server");
 
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await context.supabase
       .from("app_config").select("value").eq("key", "kri_treasury_pubkey").maybeSingle();
     if (existing?.value) throw new Error("Treasury déjà configurée");
 
@@ -170,19 +179,19 @@ export const adminSetupTreasury = createServerFn({ method: "POST" })
     const pub = kp.publicKey.toBase58();
     const encSecret = encryptSecret(bs58.encode(kp.secretKey));
 
-    await supabaseAdmin.from("app_config").upsert([
-      { key: "kri_treasury_pubkey", value: pub },
-      { key: "kri_treasury_secret_encrypted", value: encSecret },
-    ]);
+    await setConfig(context.supabase as unknown as SbClient, {
+      kri_treasury_pubkey: pub,
+      kri_treasury_secret_encrypted: encSecret,
+    });
     return { ok: true, pubkey: pub };
   });
 
 export const adminAirdropDevnet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireAdmin(context.userId);
+    await requireAdmin(context.supabase as unknown as SbClient);
     const { loadSolanaConfig, getConnection, pubkey } = await import("./solana/config.server");
-    const cfg = await loadSolanaConfig();
+    const cfg = await loadSolanaConfig(context.supabase as never);
     if (cfg.network !== "devnet") throw new Error("Airdrop devnet uniquement");
     if (!cfg.treasuryPubkey) throw new Error("Treasury manquante");
     const conn = getConnection(cfg.rpcUrl);
@@ -199,14 +208,13 @@ export const adminDeployMint = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => deploySchema.parse(d))
   .handler(async ({ data, context }) => {
-    await requireAdmin(context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await requireAdmin(context.supabase as unknown as SbClient);
     const { loadSolanaConfig, getConnection, loadTreasuryKeypair } = await import("./solana/config.server");
     const { createMint, getOrCreateAssociatedTokenAccount, mintTo } = await import("@solana/spl-token");
 
-    const cfg = await loadSolanaConfig();
+    const cfg = await loadSolanaConfig(context.supabase as never);
     if (cfg.mintAddress) throw new Error("Mint déjà déployée: " + cfg.mintAddress);
-    const treasury = await loadTreasuryKeypair();
+    const treasury = await loadTreasuryKeypair(context.supabase as never);
     const conn = getConnection(cfg.rpcUrl);
 
     const bal = await conn.getBalance(treasury.publicKey);
@@ -220,7 +228,7 @@ export const adminDeployMint = createServerFn({ method: "POST" })
     const amount = BigInt(data.initial_supply) * BigInt(10 ** cfg.decimals);
     await mintTo(conn, treasury, mint, ata.address, treasury, amount);
 
-    await supabaseAdmin.from("app_config").upsert({ key: "kri_mint_address", value: mint.toBase58() });
+    await setConfig(context.supabase as unknown as SbClient, { kri_mint_address: mint.toBase58() });
     return { ok: true, mint: mint.toBase58(), supply: data.initial_supply };
   });
 
@@ -236,7 +244,7 @@ export const adminSetTokenMetadata = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => metadataSchema.parse(d))
   .handler(async ({ data, context }) => {
-    await requireAdmin(context.userId);
+    await requireAdmin(context.supabase as unknown as SbClient);
     const { loadSolanaConfig, loadTreasuryKeypair } = await import("./solana/config.server");
     const { createUmi } = await import("@metaplex-foundation/umi-bundle-defaults");
     const {
@@ -250,9 +258,9 @@ export const adminSetTokenMetadata = createServerFn({ method: "POST" })
       "@metaplex-foundation/umi"
     );
 
-    const cfg = await loadSolanaConfig();
+    const cfg = await loadSolanaConfig(context.supabase as never);
     if (!cfg.mintAddress) throw new Error("Mint $KRI non déployée");
-    const treasury = await loadTreasuryKeypair();
+    const treasury = await loadTreasuryKeypair(context.supabase as never);
 
     const umi = createUmi(cfg.rpcUrl).use(mplTokenMetadata());
     const umiKp = umi.eddsa.createKeypairFromSecretKey(treasury.secretKey);
@@ -296,12 +304,11 @@ export const adminSetTokenMetadata = createServerFn({ method: "POST" })
       signature = Buffer.from(res.signature).toString("base64");
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("app_config").upsert([
-      { key: "kri_metadata_uri", value: data.uri },
-      { key: "kri_metadata_name", value: data.name },
-      { key: "kri_metadata_symbol", value: data.symbol },
-    ]);
+    await setConfig(context.supabase as unknown as SbClient, {
+      kri_metadata_uri: data.uri,
+      kri_metadata_name: data.name,
+      kri_metadata_symbol: data.symbol,
+    });
 
     return { ok: true, action: exists ? "updated" : "created", signature };
   });

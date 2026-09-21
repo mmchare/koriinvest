@@ -12,9 +12,14 @@ export type SolanaConfig = {
   metadataSymbol: string;
 };
 
-export async function loadSolanaConfig(): Promise<SolanaConfig> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin.from("app_config").select("key,value");
+type TableClient = {
+  from: (t: string) => any;
+  rpc: (fn: string, args?: unknown) => Promise<{ data: unknown; error: unknown }>;
+};
+
+/** Reads config through the caller's session (no service role key needed). */
+export async function loadSolanaConfig(client: TableClient): Promise<SolanaConfig> {
+  const { data } = await client.from("app_config").select("key,value") as { data: Array<{ key: string; value: string | null }> | null };
   const map = new Map<string, string>();
   for (const row of data ?? []) map.set(row.key, row.value ?? "");
   const network = (map.get("solana_network") || "devnet") as "devnet" | "mainnet-beta";
@@ -39,13 +44,12 @@ export function getConnection(rpcUrl: string): Connection {
  * Loads the treasury keypair: prefers KORI_TREASURY_SECRET_KEY env var (base58),
  * otherwise reads encrypted secret from app_config and decrypts.
  */
-export async function loadTreasuryKeypair(): Promise<Keypair> {
+export async function loadTreasuryKeypair(client: TableClient): Promise<Keypair> {
   const envSecret = process.env.KORI_TREASURY_SECRET_KEY;
   if (envSecret && envSecret.length > 10) {
     return Keypair.fromSecretKey(bs58.decode(envSecret));
   }
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin
+  const { data } = await client
     .from("app_config")
     .select("value")
     .eq("key", "kri_treasury_secret_encrypted")
