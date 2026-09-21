@@ -1,5 +1,4 @@
 import webpush from "web-push";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 let configured = false;
 function configure() {
@@ -14,7 +13,13 @@ function configure() {
 
 export type PushPayload = { title: string; body: string; url?: string; tag?: string };
 
-async function deliver(rows: Array<{ id: string; endpoint: string; p256dh: string; auth: string }>, payload: PushPayload) {
+type RpcClient = {
+  rpc: (fn: string, args?: unknown) => Promise<{ data: unknown; error: unknown }>;
+};
+
+type Target = { id: string; endpoint: string; p256dh: string; auth: string };
+
+async function deliver(client: RpcClient, rows: Target[], payload: PushPayload) {
   configure();
   const body = JSON.stringify(payload);
   let ok = 0;
@@ -25,21 +30,29 @@ async function deliver(rows: Array<{ id: string; endpoint: string; p256dh: strin
     } catch (e) {
       const status = (e as { statusCode?: number }).statusCode;
       if (status === 404 || status === 410) {
-        await supabaseAdmin.from("push_subscriptions").delete().eq("id", r.id);
+        await client.rpc("prune_push_subscription", { _id: r.id });
       }
     }
   }
   return ok;
 }
 
-export async function sendPushToUser(userId: string, payload: PushPayload) {
-  const { data } = await supabaseAdmin.from("push_subscriptions").select("id, endpoint, p256dh, auth").eq("user_id", userId);
-  if (!data || data.length === 0) return 0;
-  return deliver(data, payload);
+function asTargets(data: unknown): Target[] {
+  return Array.isArray(data) ? (data as Target[]) : [];
 }
 
-export async function sendPushToAll(payload: PushPayload) {
-  const { data } = await supabaseAdmin.from("push_subscriptions").select("id, endpoint, p256dh, auth");
-  if (!data || data.length === 0) return 0;
-  return deliver(data, payload);
+/** Send to one user. Requires an admin session client (or the user's own client for self). */
+export async function sendPushToUser(client: RpcClient, userId: string, payload: PushPayload) {
+  const { data } = await client.rpc("admin_push_targets", { _user: userId });
+  const rows = asTargets(data);
+  if (rows.length === 0) return 0;
+  return deliver(client, rows, payload);
+}
+
+/** Broadcast to every subscriber. Requires an admin session client. */
+export async function sendPushToAll(client: RpcClient, payload: PushPayload) {
+  const { data } = await client.rpc("admin_push_targets_all");
+  const rows = asTargets(data);
+  if (rows.length === 0) return 0;
+  return deliver(client, rows, payload);
 }
