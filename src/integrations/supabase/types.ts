@@ -425,10 +425,22 @@ export type Database = {
         Args: { _admin: string; _tx: string }
         Returns: Json
       }
+      admin_my_adjust_balance: {
+        Args: { _delta: number; _reason: string; _user: string }
+        Returns: Json
+      }
+      admin_my_confirm_deposit: { Args: { _tx: string }; Returns: Json }
+      admin_my_process_withdrawal: {
+        Args: { _approve: boolean; _notes: string; _tx: string }
+        Returns: Json
+      }
+      admin_my_set_config: { Args: { _entries: Json }; Returns: boolean }
       admin_process_withdrawal: {
         Args: { _admin: string; _approve: boolean; _notes: string; _tx: string }
         Returns: Json
       }
+      admin_push_targets: { Args: { _user: string }; Returns: Json }
+      admin_push_targets_all: { Args: never; Returns: Json }
       check_rate_limit: {
         Args: {
           _action: string
@@ -467,19 +479,54 @@ export type Database = {
         Args: { _amount_cfa: number; _phone: string; _user: string }
         Returns: Json
       }
+      my_check_rate_limit: {
+        Args: { _action: string; _max: number; _window_seconds: number }
+        Returns: boolean
+      }
+      my_claim_vault: { Args: { _vault: string }; Returns: Json }
       my_confirm_onchain_withdraw: {
         Args: { _signature: string; _tx: string }
         Returns: Json
       }
+      my_create_deposit: {
+        Args: {
+          _amount_cfa: number
+          _amount_kori: number
+          _phone: string
+          _provider_reference: string
+        }
+        Returns: string
+      }
+      my_create_vault: {
+        Args: { _amount: number; _days: number }
+        Returns: Json
+      }
       my_initiate_onchain_withdraw: { Args: { _amount: number }; Returns: Json }
+      my_initiate_withdrawal: {
+        Args: { _amount_cfa: number; _phone: string }
+        Returns: Json
+      }
+      my_is_admin: { Args: never; Returns: boolean }
+      my_push_targets: { Args: never; Returns: Json }
       my_refund_onchain_withdraw: {
         Args: { _reason: string; _tx: string }
         Returns: Json
+      }
+      my_spin_wheel: { Args: never; Returns: Json }
+      my_upsert_push_subscription: {
+        Args: {
+          _auth: string
+          _endpoint: string
+          _p256dh: string
+          _user_agent: string
+        }
+        Returns: boolean
       }
       notchpay_credit_deposit: {
         Args: { _payload: Json; _reference: string }
         Returns: Json
       }
+      prune_push_subscription: { Args: { _id: string }; Returns: boolean }
       refund_onchain_withdraw: {
         Args: { _reason: string; _tx: string }
         Returns: Json
