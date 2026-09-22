@@ -522,13 +522,17 @@ export type Database = {
         }
         Returns: boolean
       }
-      notchpay_credit_deposit: {
-        Args: { _payload: Json; _reference: string }
-        Returns: Json
-      }
       prune_push_subscription: { Args: { _id: string }; Returns: boolean }
       refund_onchain_withdraw: {
         Args: { _reason: string; _tx: string }
+        Returns: Json
+      }
+      saspay_credit_deposit: {
+        Args: { _payload: Json; _reference: string }
+        Returns: Json
+      }
+      saspay_fail_deposit: {
+        Args: { _payload: Json; _reference: string }
         Returns: Json
       }
       spin_wheel: { Args: { _user: string }; Returns: Json }
