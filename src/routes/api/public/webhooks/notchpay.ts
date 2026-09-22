@@ -42,8 +42,8 @@ export const Route = createFileRoute("/api/public/webhooks/notchpay")({
         try {
           const { data: tx } = await supabaseAdmin.from("transactions").select("user_id, amount_kori").eq("provider_reference", reference).maybeSingle();
           if (tx) {
-            const { sendPushToUser } = await import("@/lib/push.server");
-            await sendPushToUser(tx.user_id, { title: "Dépôt crédité ✅", body: `+${tx.amount_kori} KRI ajoutés à ton solde.`, url: "/app" });
+            const { sendPushToUserAdmin } = await import("@/lib/push.server");
+            await sendPushToUserAdmin(tx.user_id, { title: "Dépôt crédité ✅", body: `+${tx.amount_kori} KRI ajoutés à ton solde.`, url: "/app" });
           }
         } catch (_) { /* push optional */ }
         return Response.json({ ok: true, result: data });
