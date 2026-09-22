@@ -56,3 +56,29 @@ export async function sendPushToAll(client: RpcClient, payload: PushPayload) {
   if (rows.length === 0) return 0;
   return deliver(client, rows, payload);
 }
+
+/** Service-role path, used only by external webhooks (no user session available). */
+export async function sendPushToUserAdmin(userId: string, payload: PushPayload) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("push_subscriptions")
+    .select("id, endpoint, p256dh, auth")
+    .eq("user_id", userId);
+  const rows = asTargets(data);
+  if (rows.length === 0) return 0;
+  configure();
+  const body = JSON.stringify(payload);
+  let ok = 0;
+  for (const r of rows) {
+    try {
+      await webpush.sendNotification({ endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } }, body, { TTL: 60 * 60 });
+      ok++;
+    } catch (e) {
+      const status = (e as { statusCode?: number }).statusCode;
+      if (status === 404 || status === 410) {
+        await supabaseAdmin.from("push_subscriptions").delete().eq("id", r.id);
+      }
+    }
+  }
+  return ok;
+}
