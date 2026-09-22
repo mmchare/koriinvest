@@ -16,12 +16,29 @@ function phoneToEmail(country: string, phone: string): string {
   return `u${cc}${digits}@kori.app`;
 }
 
+
+/**
+ * Biometric login needs the Supabase Auth Admin API, which requires the service
+ * role key. On deployments without it (e.g. a self-managed Vercel project), fail
+ * with a clear message instead of a raw env-var error.
+ */
+async function adminClient() {
+  try {
+    const supabaseAdmin = await adminClient();
+    // touch the proxy so a missing key throws here
+    void supabaseAdmin.auth;
+    return supabaseAdmin;
+  } catch {
+    throw new Error("La connexion biométrique n'est pas disponible sur ce déploiement. Utilise ton numéro et ton mot de passe.");
+  }
+}
+
 // ─── Registration (signed-in user enrolls a passkey) ─────────────────
 export const webauthnRegisterStart = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { generateRegistrationOptions } = await import("@simplewebauthn/server");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await adminClient();
     const { rpID, rpName } = rpInfo();
 
     const { data: profile } = await supabaseAdmin
@@ -60,7 +77,7 @@ export const webauthnRegisterFinish = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => finishRegSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await adminClient();
     const { rpID, origin } = rpInfo();
 
     const challenge = data.response?.response?.clientDataJSON
@@ -101,7 +118,7 @@ export const webauthnLoginStart = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => loginStartSchema.parse(d))
   .handler(async ({ data }) => {
     const { generateAuthenticationOptions } = await import("@simplewebauthn/server");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await adminClient();
     const { rpID } = rpInfo();
 
     const email = phoneToEmail(data.country, data.phone);
@@ -132,7 +149,7 @@ export const webauthnLoginFinish = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => loginFinishSchema.parse(d))
   .handler(async ({ data }) => {
     const { verifyAuthenticationResponse } = await import("@simplewebauthn/server");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await adminClient();
     const { rpID, origin } = rpInfo();
 
     const clientChallenge = JSON.parse(
@@ -180,7 +197,7 @@ export const webauthnLoginFinish = createServerFn({ method: "POST" })
 export const webauthnList = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await adminClient();
     const { data } = await supabaseAdmin
       .from("webauthn_credentials")
       .select("id, device_name, created_at, last_used_at")
@@ -194,7 +211,7 @@ export const webauthnRemove = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => removeSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await adminClient();
     await supabaseAdmin.from("webauthn_credentials").delete()
       .eq("id", data.id).eq("user_id", context.userId);
     return { ok: true };
