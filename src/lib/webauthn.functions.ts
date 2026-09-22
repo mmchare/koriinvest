@@ -24,10 +24,10 @@ function phoneToEmail(country: string, phone: string): string {
  */
 async function adminClient() {
   try {
-    const supabaseAdmin = await adminClient();
+    const mod = await import("@/integrations/supabase/client.server");
     // touch the proxy so a missing key throws here
-    void supabaseAdmin.auth;
-    return supabaseAdmin;
+    void mod.supabaseAdmin.auth;
+    return mod.supabaseAdmin;
   } catch {
     throw new Error("La connexion biométrique n'est pas disponible sur ce déploiement. Utilise ton numéro et ton mot de passe.");
   }
