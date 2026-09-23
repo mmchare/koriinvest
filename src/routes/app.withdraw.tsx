@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
 import { initiateWithdrawal } from "@/lib/kori.functions";
 import { useProfile } from "@/hooks/use-kori";
 import { currencyFor, fmtKri, fmtXaf, kriToXaf, xafToKri } from "@/lib/format";
+import { networksFor } from "@/lib/saspay-networks";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -14,15 +15,22 @@ export const Route = createFileRoute("/app/withdraw")({
 
 function WithdrawPage() {
   const { data: profile } = useProfile();
-  const currency = currencyFor(profile?.country_code ?? "+237");
+  const countryCode = profile?.country_code ?? "+237";
+  const currency = currencyFor(countryCode);
+  const networks = useMemo(() => networksFor(countryCode), [countryCode]);
   const maxXaf = kriToXaf(Number(profile?.kori_balance ?? 0));
   const [amount, setAmount] = useState("");
   const [phone, setPhone] = useState("");
+  const [network, setNetwork] = useState(networks[0]?.code ?? "mtn_cm");
   const [loading, setLoading] = useState(false);
   const withdraw = useServerFn(initiateWithdrawal);
   const navigate = useNavigate();
   const qc = useQueryClient();
   const kri = useMemo(() => xafToKri(Number(amount) || 0), [amount]);
+
+  useEffect(() => {
+    if (!networks.some((n) => n.code === network)) setNetwork(networks[0]?.code ?? "mtn_cm");
+  }, [networks, network]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,7 +40,7 @@ function WithdrawPage() {
     if (phone.replace(/\D/g, "").length < 6) return toast.error("Numéro invalide");
     setLoading(true);
     try {
-      const r = await withdraw({ data: { amount_cfa: n, phone } });
+      const r = await withdraw({ data: { amount_cfa: n, phone, network } });
       if (!r.ok) throw new Error(r.error === "insufficient" ? "Solde insuffisant" : "Erreur");
       toast.success("Demande envoyée. Traitement sous 24 h.");
       qc.invalidateQueries();
@@ -41,6 +49,7 @@ function WithdrawPage() {
       toast.error(err instanceof Error ? err.message : "Erreur");
     } finally { setLoading(false); }
   }
+
 
   return (
     <div className="flex-1 flex flex-col">
