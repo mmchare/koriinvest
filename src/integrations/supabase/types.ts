@@ -191,6 +191,7 @@ export type Database = {
           amount_kori: number
           created_at: string
           id: string
+          provider_network: string | null
           provider_payload: Json | null
           provider_reference: string | null
           provider_tx_id: string | null
@@ -208,6 +209,7 @@ export type Database = {
           amount_kori: number
           created_at?: string
           id?: string
+          provider_network?: string | null
           provider_payload?: Json | null
           provider_reference?: string | null
           provider_tx_id?: string | null
@@ -225,6 +227,7 @@ export type Database = {
           amount_kori?: number
           created_at?: string
           id?: string
+          provider_network?: string | null
           provider_payload?: Json | null
           provider_reference?: string | null
           provider_tx_id?: string | null
@@ -504,6 +507,10 @@ export type Database = {
       my_initiate_onchain_withdraw: { Args: { _amount: number }; Returns: Json }
       my_initiate_withdrawal: {
         Args: { _amount_cfa: number; _phone: string }
+        Returns: Json
+      }
+      my_initiate_withdrawal_net: {
+        Args: { _amount_cfa: number; _network: string; _phone: string }
         Returns: Json
       }
       my_is_admin: { Args: never; Returns: boolean }
