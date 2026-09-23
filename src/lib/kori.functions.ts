@@ -115,6 +115,7 @@ export const initiateDeposit = createServerFn({ method: "POST" })
 const withdrawSchema = z.object({
   amount_cfa: z.number().positive().max(10_000_000),
   phone: z.string().min(6).max(20),
+  network: z.string().min(2).max(40).refine((n) => ALL_NETWORK_CODES.includes(n), "Réseau inconnu"),
 });
 export const initiateWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -122,8 +123,8 @@ export const initiateWithdrawal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as unknown as SbClient;
     await enforceRateLimit(sb, "withdraw_init", 3, 600);
-    const { data: out, error } = await sb.rpc("my_initiate_withdrawal", {
-      _amount_cfa: data.amount_cfa, _phone: data.phone,
+    const { data: out, error } = await sb.rpc("my_initiate_withdrawal_net", {
+      _amount_cfa: data.amount_cfa, _phone: data.phone, _network: data.network,
     });
     if (error) throw new Error(error.message);
     return out as { ok: boolean; tx_id?: string; kri?: number; error?: string };
@@ -136,10 +137,48 @@ export const adminProcessWithdrawal = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => adminWithdrawSchema.parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase as unknown as SbClient;
+    let notes = data.notes ?? null;
+
+    // Versement automatique SasPay à la validation
+    if (data.approve) {
+      const { hasSaspayKey, initiatePayout } = await import("./saspay.server");
+      if (hasSaspayKey()) {
+        const { data: tx } = await context.supabase
+          .from("transactions")
+          .select("user_id, amount_cfa, recipient_phone, provider_network, status, type")
+          .eq("id", data.tx_id).maybeSingle();
+        if (!tx || tx.status !== "PENDING" || tx.type !== "WITHDRAWAL") throw new Error("Retrait introuvable ou déjà traité.");
+        const { data: prof } = await context.supabase
+          .from("profiles").select("display_name, country_code").eq("id", tx.user_id).maybeSingle();
+        const countryCode = prof?.country_code ?? "+237";
+        const country = SASPAY_COUNTRIES[countryCode];
+        const method = tx.provider_network ?? country?.networks[0]?.code;
+        if (!method) throw new Error("Opérateur Mobile Money inconnu pour ce retrait.");
+        const name = (prof?.display_name ?? "Utilisateur KORI").trim().split(/\s+/);
+        const payout = await initiatePayout({
+          amount: Number(tx.amount_cfa ?? 0),
+          currency: country?.currency ?? "XAF",
+          country: isoFor(countryCode),
+          method,
+          msisdn: tx.recipient_phone ?? "",
+          description: `Retrait KORI ${data.tx_id.slice(0, 8)}`,
+          email: `${tx.user_id}@kori.app`,
+          firstName: name[0] ?? "Utilisateur",
+          lastName: name.slice(1).join(" ") || "KORI",
+          phone: tx.recipient_phone ?? "",
+          metadata: { tx_id: data.tx_id, user_id: tx.user_id },
+          idempotencyKey: data.tx_id,
+        });
+        const ref = payout.id ?? payout.reference ?? "—";
+        notes = [notes, `SasPay payout ${ref}`].filter(Boolean).join(" · ");
+      }
+    }
+
     const { data: out, error } = await sb.rpc("admin_my_process_withdrawal", {
-      _tx: data.tx_id, _approve: data.approve, _notes: data.notes ?? null,
+      _tx: data.tx_id, _approve: data.approve, _notes: notes,
     });
     if (error) throw new Error(error.message);
+
     try {
       const { data: tx } = await context.supabase
         .from("transactions").select("user_id, amount_kori, amount_cfa").eq("id", data.tx_id).maybeSingle();
