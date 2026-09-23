@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { ALL_NETWORK_CODES, SASPAY_COUNTRIES, isoFor } from "./saspay-networks";
+
 
 type SbClient = {
   rpc: (fn: string, args?: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
@@ -48,10 +50,11 @@ export const claimVault = createServerFn({ method: "POST" })
     return out as { ok: boolean; returned?: number; error?: string };
   });
 
-// ---- Deposit (NotchPay if NOTCHPAY_PUBLIC_KEY set, else mock PENDING tx) ----
+// ---- Deposit (SasPay softpay; sans clé configurée -> tx PENDING validée par un admin) ----
 const depositSchema = z.object({
   amount_cfa: z.number().positive().max(10_000_000),
   phone: z.string().min(6).max(20),
+  network: z.string().min(2).max(40).refine((n) => ALL_NETWORK_CODES.includes(n), "Réseau inconnu"),
 });
 export const initiateDeposit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -64,37 +67,37 @@ export const initiateDeposit = createServerFn({ method: "POST" })
     const rate = Number(cfg?.value ?? 0.1);
     const kri = Math.round(data.amount_cfa * rate * 10000) / 10000;
 
-    const notchKey = process.env.NOTCHPAY_PUBLIC_KEY;
+    const { data: profile } = await context.supabase
+      .from("profiles").select("phone_number, display_name, country_code").eq("id", context.userId).maybeSingle();
+    const countryCode = profile?.country_code ?? "+237";
+    const iso = isoFor(countryCode);
+    const currency = SASPAY_COUNTRIES[countryCode]?.currency ?? "XAF";
+
     let providerRef: string | null = null;
     let authorizationUrl: string | null = null;
+    let instructions: string | null = null;
 
-    if (notchKey) {
-      const { data: profile } = await context.supabase
-        .from("profiles").select("phone_number, display_name").eq("id", context.userId).maybeSingle();
-      const email = `${context.userId}@kori.app`;
-      try {
-        const resp = await fetch("https://api.notchpay.co/payments/initialize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: notchKey },
-          body: JSON.stringify({
-            email,
-            amount: data.amount_cfa,
-            currency: "XAF",
-            description: `Dépôt KORI - ${kri} KRI`,
-            reference: `kori_${context.userId.slice(0, 8)}_${Date.now()}`,
-            customer: { phone: data.phone, name: profile?.display_name ?? "Utilisateur" },
-            callback: "https://koriinvest.lovable.app/app",
-          }),
-        });
-        const body = await resp.json() as { transaction?: { reference?: string }; authorization_url?: string; message?: string };
-        if (!resp.ok || !body?.transaction?.reference) {
-          throw new Error(body?.message ?? "Erreur NotchPay");
-        }
-        providerRef = body.transaction.reference;
-        authorizationUrl = body.authorization_url ?? null;
-      } catch (e) {
-        throw new Error(`NotchPay: ${(e as Error).message}`);
-      }
+    const { hasSaspayKey, initiateSoftpay } = await import("./saspay.server");
+    if (hasSaspayKey()) {
+      const name = (profile?.display_name ?? "Utilisateur KORI").trim().split(/\s+/);
+      const payin = await initiateSoftpay({
+        amount: data.amount_cfa,
+        currency,
+        country: iso,
+        network: data.network,
+        description: `Dépôt KORI - ${kri} KRI`,
+        email: `${context.userId}@kori.app`,
+        firstName: name[0] ?? "Utilisateur",
+        lastName: name.slice(1).join(" ") || "KORI",
+        phone: data.phone,
+        returnUrl: "https://koriinvest.lovable.app/app",
+        metadata: { user_id: context.userId, kri },
+        idempotencyKey: crypto.randomUUID(),
+      });
+      providerRef = payin.id ?? payin.reference ?? null;
+      if (!providerRef) throw new Error("SasPay n'a pas renvoyé de référence de paiement.");
+      authorizationUrl = payin.checkout_url && payin.checkout_url.length > 0 ? payin.checkout_url : null;
+      instructions = payin.instructions ?? null;
     }
 
     const { data: txId, error } = await sb.rpc("my_create_deposit", {
@@ -104,13 +107,15 @@ export const initiateDeposit = createServerFn({ method: "POST" })
       _provider_reference: providerRef,
     });
     if (error) throw new Error(error.message);
-    return { ok: true, tx_id: txId as string, kri, authorization_url: authorizationUrl };
+    return { ok: true, tx_id: txId as string, kri, authorization_url: authorizationUrl, instructions };
   });
+
 
 // ---- Withdrawal ----
 const withdrawSchema = z.object({
   amount_cfa: z.number().positive().max(10_000_000),
   phone: z.string().min(6).max(20),
+  network: z.string().min(2).max(40).refine((n) => ALL_NETWORK_CODES.includes(n), "Réseau inconnu"),
 });
 export const initiateWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -118,8 +123,8 @@ export const initiateWithdrawal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as unknown as SbClient;
     await enforceRateLimit(sb, "withdraw_init", 3, 600);
-    const { data: out, error } = await sb.rpc("my_initiate_withdrawal", {
-      _amount_cfa: data.amount_cfa, _phone: data.phone,
+    const { data: out, error } = await sb.rpc("my_initiate_withdrawal_net", {
+      _amount_cfa: data.amount_cfa, _phone: data.phone, _network: data.network,
     });
     if (error) throw new Error(error.message);
     return out as { ok: boolean; tx_id?: string; kri?: number; error?: string };
@@ -132,10 +137,48 @@ export const adminProcessWithdrawal = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => adminWithdrawSchema.parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase as unknown as SbClient;
+    let notes = data.notes ?? null;
+
+    // Versement automatique SasPay à la validation
+    if (data.approve) {
+      const { hasSaspayKey, initiatePayout } = await import("./saspay.server");
+      if (hasSaspayKey()) {
+        const { data: tx } = await context.supabase
+          .from("transactions")
+          .select("user_id, amount_cfa, recipient_phone, provider_network, status, type")
+          .eq("id", data.tx_id).maybeSingle();
+        if (!tx || tx.status !== "PENDING" || tx.type !== "WITHDRAWAL") throw new Error("Retrait introuvable ou déjà traité.");
+        const { data: prof } = await context.supabase
+          .from("profiles").select("display_name, country_code").eq("id", tx.user_id).maybeSingle();
+        const countryCode = prof?.country_code ?? "+237";
+        const country = SASPAY_COUNTRIES[countryCode];
+        const method = tx.provider_network ?? country?.networks[0]?.code;
+        if (!method) throw new Error("Opérateur Mobile Money inconnu pour ce retrait.");
+        const name = (prof?.display_name ?? "Utilisateur KORI").trim().split(/\s+/);
+        const payout = await initiatePayout({
+          amount: Number(tx.amount_cfa ?? 0),
+          currency: country?.currency ?? "XAF",
+          country: isoFor(countryCode),
+          method,
+          msisdn: tx.recipient_phone ?? "",
+          description: `Retrait KORI ${data.tx_id.slice(0, 8)}`,
+          email: `${tx.user_id}@kori.app`,
+          firstName: name[0] ?? "Utilisateur",
+          lastName: name.slice(1).join(" ") || "KORI",
+          phone: tx.recipient_phone ?? "",
+          metadata: { tx_id: data.tx_id, user_id: tx.user_id },
+          idempotencyKey: data.tx_id,
+        });
+        const ref = payout.id ?? payout.reference ?? "—";
+        notes = [notes, `SasPay payout ${ref}`].filter(Boolean).join(" · ");
+      }
+    }
+
     const { data: out, error } = await sb.rpc("admin_my_process_withdrawal", {
-      _tx: data.tx_id, _approve: data.approve, _notes: data.notes ?? null,
+      _tx: data.tx_id, _approve: data.approve, _notes: notes,
     });
     if (error) throw new Error(error.message);
+
     try {
       const { data: tx } = await context.supabase
         .from("transactions").select("user_id, amount_kori, amount_cfa").eq("id", data.tx_id).maybeSingle();

@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
 import { initiateWithdrawal } from "@/lib/kori.functions";
 import { useProfile } from "@/hooks/use-kori";
 import { currencyFor, fmtKri, fmtXaf, kriToXaf, xafToKri } from "@/lib/format";
+import { networksFor } from "@/lib/saspay-networks";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -14,15 +15,22 @@ export const Route = createFileRoute("/app/withdraw")({
 
 function WithdrawPage() {
   const { data: profile } = useProfile();
-  const currency = currencyFor(profile?.country_code ?? "+237");
+  const countryCode = profile?.country_code ?? "+237";
+  const currency = currencyFor(countryCode);
+  const networks = useMemo(() => networksFor(countryCode), [countryCode]);
   const maxXaf = kriToXaf(Number(profile?.kori_balance ?? 0));
   const [amount, setAmount] = useState("");
   const [phone, setPhone] = useState("");
+  const [network, setNetwork] = useState(networks[0]?.code ?? "mtn_cm");
   const [loading, setLoading] = useState(false);
   const withdraw = useServerFn(initiateWithdrawal);
   const navigate = useNavigate();
   const qc = useQueryClient();
   const kri = useMemo(() => xafToKri(Number(amount) || 0), [amount]);
+
+  useEffect(() => {
+    if (!networks.some((n) => n.code === network)) setNetwork(networks[0]?.code ?? "mtn_cm");
+  }, [networks, network]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,7 +40,7 @@ function WithdrawPage() {
     if (phone.replace(/\D/g, "").length < 6) return toast.error("Numéro invalide");
     setLoading(true);
     try {
-      const r = await withdraw({ data: { amount_cfa: n, phone } });
+      const r = await withdraw({ data: { amount_cfa: n, phone, network } });
       if (!r.ok) throw new Error(r.error === "insufficient" ? "Solde insuffisant" : "Erreur");
       toast.success("Demande envoyée. Traitement sous 24 h.");
       qc.invalidateQueries();
@@ -41,6 +49,7 @@ function WithdrawPage() {
       toast.error(err instanceof Error ? err.message : "Erreur");
     } finally { setLoading(false); }
   }
+
 
   return (
     <div className="flex-1 flex flex-col">
@@ -58,10 +67,21 @@ function WithdrawPage() {
           <input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))} className="w-full bg-secondary rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/40 text-lg font-semibold" />
           <span className="text-xs text-muted-foreground mt-1">≈ {fmtKri(kri)} seront gelés</span>
         </Field>
+        <Field label="Opérateur Mobile Money">
+          <div className="grid grid-cols-2 gap-2">
+            {networks.map((n) => (
+              <button type="button" key={n.code} onClick={() => setNetwork(n.code)}
+                className={`rounded-xl py-3 text-sm font-semibold border transition ${network === n.code ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary hover:bg-muted"}`}>
+                {n.label}
+              </button>
+            ))}
+          </div>
+        </Field>
         <Field label="Numéro Mobile Money bénéficiaire">
           <input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-secondary rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/40" placeholder="6 12 34 56 78" />
         </Field>
-        <p className="text-xs text-muted-foreground">Les retraits sont validés manuellement (sous 24 h). En cas de refus, les KORI sont restitués.</p>
+        <p className="text-xs text-muted-foreground">Retrait validé par l'équipe (sous 24 h) puis envoyé via SasPay. En cas de refus, les KORI sont restitués.</p>
+
         <button type="submit" disabled={loading} className="mt-auto mb-2 w-full bg-foreground text-background font-semibold rounded-2xl py-4 disabled:opacity-60 active:scale-[0.98] transition">
           {loading ? "Patientez…" : "Demander le retrait"}
         </button>

@@ -23,7 +23,7 @@ import { Route as AppReferralRouteImport } from './routes/app.referral'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppDepositRouteImport } from './routes/app.deposit'
 import { Route as ApiPublicTokenMetadataRouteImport } from './routes/api/public/token-metadata'
-import { Route as ApiPublicWebhooksNotchpayRouteImport } from './routes/api/public/webhooks/notchpay'
+import { Route as ApiPublicWebhooksSaspayRouteImport } from './routes/api/public/webhooks/saspay'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -95,12 +95,11 @@ const ApiPublicTokenMetadataRoute = ApiPublicTokenMetadataRouteImport.update({
   path: '/api/public/token-metadata',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicWebhooksNotchpayRoute =
-  ApiPublicWebhooksNotchpayRouteImport.update({
-    id: '/api/public/webhooks/notchpay',
-    path: '/api/public/webhooks/notchpay',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const ApiPublicWebhooksSaspayRoute = ApiPublicWebhooksSaspayRouteImport.update({
+  id: '/api/public/webhooks/saspay',
+  path: '/api/public/webhooks/saspay',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,7 +116,7 @@ export interface FileRoutesByFullPath {
   '/r/$code': typeof RCodeRoute
   '/app/': typeof AppIndexRoute
   '/api/public/token-metadata': typeof ApiPublicTokenMetadataRoute
-  '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
+  '/api/public/webhooks/saspay': typeof ApiPublicWebhooksSaspayRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,7 +132,7 @@ export interface FileRoutesByTo {
   '/r/$code': typeof RCodeRoute
   '/app': typeof AppIndexRoute
   '/api/public/token-metadata': typeof ApiPublicTokenMetadataRoute
-  '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
+  '/api/public/webhooks/saspay': typeof ApiPublicWebhooksSaspayRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -151,7 +150,7 @@ export interface FileRoutesById {
   '/r/$code': typeof RCodeRoute
   '/app/': typeof AppIndexRoute
   '/api/public/token-metadata': typeof ApiPublicTokenMetadataRoute
-  '/api/public/webhooks/notchpay': typeof ApiPublicWebhooksNotchpayRoute
+  '/api/public/webhooks/saspay': typeof ApiPublicWebhooksSaspayRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -170,7 +169,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/app/'
     | '/api/public/token-metadata'
-    | '/api/public/webhooks/notchpay'
+    | '/api/public/webhooks/saspay'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -186,7 +185,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/app'
     | '/api/public/token-metadata'
-    | '/api/public/webhooks/notchpay'
+    | '/api/public/webhooks/saspay'
   id:
     | '__root__'
     | '/'
@@ -203,7 +202,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/app/'
     | '/api/public/token-metadata'
-    | '/api/public/webhooks/notchpay'
+    | '/api/public/webhooks/saspay'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -213,7 +212,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   RCodeRoute: typeof RCodeRoute
   ApiPublicTokenMetadataRoute: typeof ApiPublicTokenMetadataRoute
-  ApiPublicWebhooksNotchpayRoute: typeof ApiPublicWebhooksNotchpayRoute
+  ApiPublicWebhooksSaspayRoute: typeof ApiPublicWebhooksSaspayRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -316,11 +315,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicTokenMetadataRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/webhooks/notchpay': {
-      id: '/api/public/webhooks/notchpay'
-      path: '/api/public/webhooks/notchpay'
-      fullPath: '/api/public/webhooks/notchpay'
-      preLoaderRoute: typeof ApiPublicWebhooksNotchpayRouteImport
+    '/api/public/webhooks/saspay': {
+      id: '/api/public/webhooks/saspay'
+      path: '/api/public/webhooks/saspay'
+      fullPath: '/api/public/webhooks/saspay'
+      preLoaderRoute: typeof ApiPublicWebhooksSaspayRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -357,7 +356,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   RCodeRoute: RCodeRoute,
   ApiPublicTokenMetadataRoute: ApiPublicTokenMetadataRoute,
-  ApiPublicWebhooksNotchpayRoute: ApiPublicWebhooksNotchpayRoute,
+  ApiPublicWebhooksSaspayRoute: ApiPublicWebhooksSaspayRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
