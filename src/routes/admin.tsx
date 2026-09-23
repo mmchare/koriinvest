@@ -127,7 +127,7 @@ function Deposits() {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-muted-foreground mb-2">En attendant l'intégration NotchPay, valide manuellement les dépôts confirmés côté Mobile Money.</p>
+      <p className="text-xs text-muted-foreground mb-2">Les dépôts payés via SasPay sont crédités automatiquement. Utilise ce bouton uniquement pour un dépôt reçu mais resté en attente.</p>
       {(data ?? []).length === 0 && <p className="text-sm text-muted-foreground">Aucun dépôt en attente.</p>}
       {(data ?? []).map((t) => (
         <div key={t.id} className="bg-card border border-border rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
