@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
 import { initiateDeposit } from "@/lib/kori.functions";
 import { useProfile } from "@/hooks/use-kori";
 import { currencyFor, fmtKri, xafToKri } from "@/lib/format";
+import { networksFor } from "@/lib/saspay-networks";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -14,13 +15,20 @@ export const Route = createFileRoute("/app/deposit")({
 
 function DepositPage() {
   const { data: profile } = useProfile();
-  const currency = currencyFor(profile?.country_code ?? "+237");
+  const countryCode = profile?.country_code ?? "+237";
+  const currency = currencyFor(countryCode);
+  const networks = useMemo(() => networksFor(countryCode), [countryCode]);
   const [amount, setAmount] = useState<string>("2500");
   const [phone, setPhone] = useState<string>("");
+  const [network, setNetwork] = useState<string>(networks[0]?.code ?? "mtn_cm");
   const [loading, setLoading] = useState(false);
   const deposit = useServerFn(initiateDeposit);
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!networks.some((n) => n.code === network)) setNetwork(networks[0]?.code ?? "mtn_cm");
+  }, [networks, network]);
 
   const kri = useMemo(() => xafToKri(Number(amount) || 0), [amount]);
 
@@ -31,19 +39,20 @@ function DepositPage() {
     if (phone.replace(/\D/g, "").length < 6) return toast.error("Numéro Mobile Money invalide");
     setLoading(true);
     try {
-      const r = await deposit({ data: { amount_cfa: n, phone } });
+      const r = await deposit({ data: { amount_cfa: n, phone, network } });
       if (!r.ok) throw new Error("Erreur");
       if (r.authorization_url) {
         window.location.href = r.authorization_url;
         return;
       }
-      toast.success("Demande envoyée. Un admin va valider votre paiement.");
+      toast.success(r.instructions ?? "Demande envoyée. Valide le paiement sur ton téléphone.");
       qc.invalidateQueries();
       navigate({ to: "/app" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur");
     } finally { setLoading(false); }
   }
+
 
   return (
     <div className="flex-1 flex flex-col">
