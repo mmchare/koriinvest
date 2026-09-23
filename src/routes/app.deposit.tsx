@@ -80,13 +80,25 @@ function DepositPage() {
           ))}
         </div>
 
+        <Field label="Opérateur Mobile Money">
+          <div className="grid grid-cols-2 gap-2">
+            {networks.map((n) => (
+              <button type="button" key={n.code} onClick={() => setNetwork(n.code)}
+                className={`rounded-xl py-3 text-sm font-semibold border transition ${network === n.code ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary hover:bg-muted"}`}>
+                {n.label}
+              </button>
+            ))}
+          </div>
+        </Field>
+
         <Field label="Numéro Mobile Money">
           <input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-secondary rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/40" placeholder="6 12 34 56 78" />
         </Field>
 
         <p className="text-xs text-muted-foreground">
-          Paiement sécurisé via Orange Money, MTN MoMo, Wave (NotchPay).
+          Paiement sécurisé via SasPay (Orange Money, MTN MoMo, Wave, Moov…).
         </p>
+
 
         <button type="submit" disabled={loading} className="mt-auto mb-2 w-full bg-kori-gradient text-white font-semibold rounded-2xl py-4 shadow-kori disabled:opacity-60 active:scale-[0.98] transition">
           {loading ? "Patientez…" : `Payer ${Number(amount || 0).toLocaleString("fr-FR")} ${currency}`}
