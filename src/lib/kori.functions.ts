@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { ALL_NETWORK_CODES, SASPAY_COUNTRIES, isoFor } from "./saspay-networks";
+
 
 type SbClient = {
   rpc: (fn: string, args?: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
@@ -75,6 +77,7 @@ export const initiateDeposit = createServerFn({ method: "POST" })
     let authorizationUrl: string | null = null;
     let instructions: string | null = null;
 
+    const { hasSaspayKey, initiateSoftpay } = await import("./saspay.server");
     if (hasSaspayKey()) {
       const name = (profile?.display_name ?? "Utilisateur KORI").trim().split(/\s+/);
       const payin = await initiateSoftpay({
