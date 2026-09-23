@@ -67,10 +67,21 @@ function WithdrawPage() {
           <input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))} className="w-full bg-secondary rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/40 text-lg font-semibold" />
           <span className="text-xs text-muted-foreground mt-1">≈ {fmtKri(kri)} seront gelés</span>
         </Field>
+        <Field label="Opérateur Mobile Money">
+          <div className="grid grid-cols-2 gap-2">
+            {networks.map((n) => (
+              <button type="button" key={n.code} onClick={() => setNetwork(n.code)}
+                className={`rounded-xl py-3 text-sm font-semibold border transition ${network === n.code ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary hover:bg-muted"}`}>
+                {n.label}
+              </button>
+            ))}
+          </div>
+        </Field>
         <Field label="Numéro Mobile Money bénéficiaire">
           <input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-secondary rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/40" placeholder="6 12 34 56 78" />
         </Field>
-        <p className="text-xs text-muted-foreground">Les retraits sont validés manuellement (sous 24 h). En cas de refus, les KORI sont restitués.</p>
+        <p className="text-xs text-muted-foreground">Retrait validé par l'équipe (sous 24 h) puis envoyé via SasPay. En cas de refus, les KORI sont restitués.</p>
+
         <button type="submit" disabled={loading} className="mt-auto mb-2 w-full bg-foreground text-background font-semibold rounded-2xl py-4 disabled:opacity-60 active:scale-[0.98] transition">
           {loading ? "Patientez…" : "Demander le retrait"}
         </button>
