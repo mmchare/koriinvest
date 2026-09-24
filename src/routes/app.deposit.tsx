@@ -35,7 +35,7 @@ function DepositPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const n = Number(amount);
-    if (!n || n < 500) return toast.error("Montant minimum 500");
+    if (!n || n < 100) return toast.error("Montant minimum 100");
     if (phone.replace(/\D/g, "").length < 6) return toast.error("Numéro Mobile Money invalide");
     setLoading(true);
     try {
