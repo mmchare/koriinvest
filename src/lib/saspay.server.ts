@@ -1,19 +1,14 @@
 // Client HTTP SasPay (serveur uniquement) — https://docs.saspay.me
 const BASE_URL = "https://api.saspay.me/api/v1";
 
-// La clé SasPay peut être enregistrée sous SASPAY_SECRET_KEY ou STRIPE_LIVE_API_KEY.
-function resolveKey(): string | undefined {
-  return process.env.SASPAY_SECRET_KEY ?? process.env.STRIPE_LIVE_API_KEY;
-}
-
 export function saspayKey(): string {
-  const key = resolveKey();
+  const key = process.env.SASPAY_SECRET_KEY;
   if (!key) throw new Error("Paiements indisponibles : clé SasPay non configurée.");
   return key;
 }
 
 export function hasSaspayKey(): boolean {
-  return Boolean(resolveKey());
+  return Boolean(process.env.SASPAY_SECRET_KEY);
 }
 
 type SasEnvelope<T> = { success?: boolean; data?: T; error?: unknown; message?: string; code?: unknown };
