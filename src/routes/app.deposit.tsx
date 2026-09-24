@@ -73,7 +73,7 @@ function DepositPage() {
         </Field>
 
         <div className="grid grid-cols-4 gap-2">
-          {[1000, 2500, 5000, 10000].map((v) => (
+          {[100, 1000, 5000, 10000].map((v) => (
             <button type="button" key={v} onClick={() => setAmount(String(v))} className="bg-secondary rounded-xl py-2 text-sm font-medium hover:bg-muted">
               {v.toLocaleString("fr-FR")}
             </button>
