@@ -24,7 +24,7 @@ export const Route = createFileRoute("/api/public/webhooks/saspay")({
             return new Response("Invalid signature", { status: 401 });
           }
           const ts = Number(timestamp);
-          if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 60 * 60 * 24) {
+          if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 60 * 5) {
             return new Response("Stale timestamp", { status: 401 });
           }
         }
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/api/public/webhooks/saspay")({
           return new Response("Bad JSON", { status: 400 });
         }
 
-        const event = payload.event ?? "";
+        const event = payload.event ?? request.headers.get("x-webhook-event") ?? "";
         const refs = [payload.data?.id, payload.data?.reference].filter(
           (v): v is string => typeof v === "string" && v.length > 0,
         );
@@ -74,7 +74,17 @@ export const Route = createFileRoute("/api/public/webhooks/saspay")({
           }
         }
 
-        if (isSuccess && matchedRef) {
+        // SasPay ne retente que lorsque notre endpoint répond avec un statut non-2xx.
+        // Un webhook peut arriver avant que la transaction soit enregistrée localement.
+        if (!matchedRef) {
+          console.error("saspay webhook transaction not matched", { event, refs, result });
+          return Response.json(
+            { ok: false, error: "Transaction temporairement introuvable" },
+            { status: 503, headers: { "Retry-After": "30" } },
+          );
+        }
+
+        if (isSuccess) {
           try {
             const { data: tx } = await supabaseAdmin
               .from("transactions")
