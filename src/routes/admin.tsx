@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { adminProcessWithdrawal, adminConfirmDeposit, adminBlockUser } from "@/lib/kori.functions";
 import { adminAdjustBalance } from "@/lib/admin.functions";
+import { verifyAdminGate } from "@/lib/admin-gate.functions";
 import { adminBroadcastPush } from "@/lib/push.functions";
 import { adminGetSolanaStatus, adminSetupTreasury, adminAirdropDevnet, adminDeployMint, adminSetTokenMetadata } from "@/lib/solana.functions";
 import { fmtKri, fmtXaf } from "@/lib/format";
@@ -24,7 +25,43 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
+  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem("kori-admin-gate") === "1");
+  if (!unlocked) return <AdminGate onOk={() => { sessionStorage.setItem("kori-admin-gate", "1"); setUnlocked(true); }} />;
+  return <AdminContent />;
+}
+
+function AdminGate({ onOk }: { onOk: () => void }) {
+  const verify = useServerFn(verifyAdminGate);
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const { ok } = await verify({ data: { password: pw } });
+      if (ok) onOk(); else toast.error("Mot de passe incorrect");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur");
+    } finally { setBusy(false); }
+  }
+  return (
+    <div className="min-h-screen bg-background grid place-items-center px-5">
+      <form onSubmit={submit} className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 space-y-4">
+        <Link to="/app" className="text-sm text-muted-foreground inline-flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Retour</Link>
+        <h1 className="font-display text-xl font-bold">Accès administration</h1>
+        <input type="password" autoFocus value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Mot de passe"
+          className="w-full bg-secondary rounded-xl px-4 py-3 outline-none focus:ring-2 ring-primary/40" />
+        <button disabled={busy || !pw} className="w-full bg-kori-gradient text-white font-semibold rounded-xl py-3 disabled:opacity-60">
+          {busy ? "Vérification…" : "Entrer"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function AdminContent() {
   const [tab, setTab] = useState<"withdrawals" | "deposits" | "users" | "finance" | "analytics" | "broadcast" | "solana">("withdrawals");
+
 
   return (
     <div className="min-h-screen bg-background">
