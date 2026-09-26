@@ -131,7 +131,7 @@ export const initiateWithdrawal = createServerFn({ method: "POST" })
   });
 
 // ---- Admin ----
-const adminWithdrawSchema = z.object({ tx_id: z.string().uuid(), approve: z.boolean(), notes: z.string().max(500).optional() });
+const adminWithdrawSchema = z.object({ tx_id: z.string().uuid(), approve: z.boolean(), notes: z.string().max(500).optional(), manual: z.boolean().optional() });
 export const adminProcessWithdrawal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => adminWithdrawSchema.parse(d))
@@ -140,7 +140,7 @@ export const adminProcessWithdrawal = createServerFn({ method: "POST" })
     let notes = data.notes ?? null;
 
     // Versement automatique SasPay à la validation
-    if (data.approve) {
+    if (data.approve && !data.manual) {
       const { hasSaspayKey, initiatePayout } = await import("./saspay.server");
       if (hasSaspayKey()) {
         const { data: tx } = await context.supabase
@@ -155,7 +155,9 @@ export const adminProcessWithdrawal = createServerFn({ method: "POST" })
         const method = tx.provider_network ?? country?.networks[0]?.code;
         if (!method) throw new Error("Opérateur Mobile Money inconnu pour ce retrait.");
         const name = (prof?.display_name ?? "Utilisateur KORI").trim().split(/\s+/);
-        const payout = await initiatePayout({
+        let payout: { id?: string; reference?: string };
+        try {
+        payout = await initiatePayout({
           amount: Number(tx.amount_cfa ?? 0),
           currency: country?.currency ?? "XAF",
           country: isoFor(countryCode),
@@ -169,6 +171,9 @@ export const adminProcessWithdrawal = createServerFn({ method: "POST" })
           metadata: { tx_id: data.tx_id, user_id: tx.user_id },
           idempotencyKey: data.tx_id,
         });
+        } catch (e) {
+          return { ok: false, payout_error: e instanceof Error ? e.message : "Échec du versement SasPay" };
+        }
         const ref = payout.id ?? payout.reference ?? "—";
         notes = [notes, `SasPay payout ${ref}`].filter(Boolean).join(" · ");
       }
@@ -191,7 +196,7 @@ export const adminProcessWithdrawal = createServerFn({ method: "POST" })
         });
       }
     } catch (_) { /* push optional */ }
-    return out as { ok: boolean; error?: string };
+    return out as { ok: boolean; error?: string; payout_error?: string };
   });
 
 const adminDepositSchema = z.object({ tx_id: z.string().uuid() });
