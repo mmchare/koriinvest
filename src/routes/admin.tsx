@@ -117,7 +117,14 @@ function Withdrawals() {
       if (!notes.trim()) return;
     }
     try {
-      await process({ data: { tx_id, approve, notes } });
+      const res = await process({ data: { tx_id, approve, notes } });
+      if (res.payout_error) {
+        const manual = window.confirm(
+          `Le versement automatique SasPay a échoué :\n${res.payout_error}\n\nAs-tu envoyé l'argent toi-même ? OK = valider comme payé à la main.`,
+        );
+        if (!manual) return;
+        await process({ data: { tx_id, approve: true, notes: "Payé manuellement", manual: true } });
+      }
       toast.success(approve ? "Retrait validé" : "Retrait refusé");
       qc.invalidateQueries();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Erreur"); }
