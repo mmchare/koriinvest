@@ -141,3 +141,49 @@
 a[href*="lovable.dev"] {
   display: none !important;
 }
+
+/* ================= Pitch deck slides ================= */
+.slide-stage { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.slide-wrapper {
+  position: absolute; width: 1920px; height: 1080px; left: 50%; top: 50%;
+  margin-left: -960px; margin-top: -540px;
+  transform: scale(var(--scale, 1)); transform-origin: center center;
+}
+.slide-content {
+  width: 1920px; height: 1080px; overflow: hidden; position: relative;
+  font-family: var(--font-sans); color: var(--slide-ink);
+  background: var(--slide-bg);
+  --slide-bg: oklch(0.15 0.02 25);
+  --slide-bg2: oklch(0.19 0.03 25);
+  --slide-ink: oklch(0.97 0.01 60);
+  --slide-ink-dim: oklch(0.74 0.02 40);
+  --slide-kori: oklch(0.64 0.23 25);
+  --slide-kori-soft: oklch(0.64 0.23 25 / 0.15);
+  --slide-line: oklch(0.3 0.03 25);
+  --slide-success: oklch(0.72 0.16 155);
+  --slide-title-lg: 104px; --slide-title: 88px; --slide-title-md: 64px;
+  --slide-subtitle: 46px; --slide-body-lg: 38px; --slide-body: 30px;
+  --slide-caption: 23px; --slide-kicker: 21px; --slide-chrome: 19px;
+}
+.slide-title-lg, .slide-title, .slide-title-md, .slide-subtitle { font-family: var(--font-display); font-weight: 700; }
+.slide-title-lg { font-size: var(--slide-title-lg); line-height: 1.0; letter-spacing: -0.05em; }
+.slide-title { font-size: var(--slide-title); line-height: 1.05; letter-spacing: -0.04em; }
+.slide-title-md { font-size: var(--slide-title-md); line-height: 1.08; letter-spacing: -0.03em; }
+.slide-subtitle { font-size: var(--slide-subtitle); line-height: 1.18; letter-spacing: -0.02em; }
+.slide-body-lg { font-size: var(--slide-body-lg); line-height: 1.25; }
+.slide-body { font-size: var(--slide-body); line-height: 1.3; }
+.slide-caption { font-size: var(--slide-caption); line-height: 1.3; }
+.slide-kicker { font-size: var(--slide-kicker); line-height: 1.1; letter-spacing: 0.16em; text-transform: uppercase; }
+.slide-chrome, .slide-badge, .slide-footer, .slide-page { font-size: var(--slide-chrome); line-height: 1.2; }
+.slide-badge, .slide-page { white-space: nowrap; }
+.slide-accent { color: var(--slide-kori); }
+.slide-dim { color: var(--slide-ink-dim); }
+.slide-card { background: var(--slide-bg2); border: 1px solid var(--slide-line); border-radius: 26px; }
+.slide-pill { display: inline-flex; align-items: center; gap: 10px; border-radius: 999px; background: var(--slide-kori-soft); color: var(--slide-kori); padding: 0.45em 1em; white-space: nowrap; }
+.slide-glow { position: absolute; border-radius: 999px; filter: blur(120px); pointer-events: none; }
+.slide-print-item { width: 1920px; height: 1080px; page-break-after: always; break-after: page; }
+@media print {
+  @page { size: 1920px 1080px landscape; margin: 0; }
+  body { background: #000 !important; }
+  .no-print { display: none !important; }
+}
